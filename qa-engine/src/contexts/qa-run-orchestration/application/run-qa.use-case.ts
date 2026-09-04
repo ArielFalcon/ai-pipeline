@@ -673,10 +673,12 @@ export class RunQaUseCase {
     // EXACTLY the archetypes this prompt carried — never the wider matched set, and never a set
     // re-derived later from a diff that a regen may have moved past.
     //
-    // Conditional on `generating` (settled by classify() above): a regression run never calls
-    // GenerationPort.generate() at all — the generate phase below substitutes a synthetic
-    // { specs: [], approved: true } — so NO prompt is built, nothing is offered, and nothing may be
-    // credited. Selecting anyway would spend a store read on a result the run cannot use and would
+    // Conditional on `generating` (settled by classify() above): a regression run's generate phase
+    // below never calls GenerationPort.generate() — it substitutes a synthetic
+    // { specs: [], approved: true } — so no authoring prompt is built, nothing is offered, and
+    // nothing may be credited. (The enforce-mode coverage regen further down CAN still generate on
+    // such a run; with the set empty here it does so carrying no skillExemplars, so the invariant
+    // holds there too.) Selecting anyway would spend a store read on a result the run cannot use and would
     // spread `skillExemplars` into baseEnrichment for a prompt that never exists, which is what the
     // fold's own `offeredArchetypes.length > 0` guard would then have to compensate for far away
     // from here. Keeping the set empty at the source is the single place this stays true.

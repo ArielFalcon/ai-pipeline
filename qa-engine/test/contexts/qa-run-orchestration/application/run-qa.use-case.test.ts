@@ -6104,3 +6104,94 @@ test("curriculum: the fold is NOT gated on shouldDistillLearning — an app_defe
   assert.equal(folds.length, 1, "app_defect must still credit the curriculum");
   assert.equal(folds[0]!.adjudicationClass, "app_defect");
 });
+
+test("curriculum: a regression run offers nothing and folds nothing — no prompt is ever built, so no archetype may be credited", async () => {
+  const folds: CurriculumFoldInput[] = [];
+  let selectCalls = 0;
+  // A `regression` classification sets `generating = false`, and the generate phase then substitutes
+  // a synthetic { specs: [], approved: true } WITHOUT calling GenerationPort.generate() — no prompt
+  // carries an exemplar. This fixture makes the existing suite run green with coverage "pass", the
+  // one shape that would otherwise credit every selected archetype for a generation that never ran.
+  const { ports } = stubPorts({
+    classify: async () => ({ action: "regression", reason: "message claims a test-only change", diff: "+expect(sum(1, 2)).toBe(3);" }),
+    execute: async () => ({ verdict: "pass", cases: [{ name: "t", status: "pass" }], logs: "" }),
+    measure: async () => ({ status: "pass", ratio: 0.9 }),
+    blocks: () => false,
+    curriculum: {
+      select: async () => {
+        selectCalls += 1;
+        return [{ id: "ex-form-happy-path", name: "n", template: "t", archetype: "happy-path", proven: false, promotionCount: 0 }];
+      },
+      fold: async (i) => { folds.push(i); },
+    },
+  });
+
+  await new RunQaUseCase(ports).run({ ...baseInput, runId: "curriculum-fold-regression" });
+
+  assert.equal(folds.length, 0, "a regression run builds no prompt, so nothing may be credited");
+  assert.equal(selectCalls, 0, "no store read is spent on a run that cannot use the result");
+});
+
+test("curriculum: the fold reads the enforce-mode regeneration's SECOND coverage measurement, never the superseded first one", async () => {
+  const folds: CurriculumFoldInput[] = [];
+  let measureCallCount = 0;
+  // Same fixture shape the KEYSTONE regen test uses: an enforce-mode policy, a first measurement
+  // that blocks, and a regen whose generate/validate/execute all succeed so the re-measure runs.
+  const { ports } = stubPorts({
+    classify: async () => ({
+      action: "generate",
+      reason: "diff touches src/orders.ts",
+      diff: "diff --git a/src/orders.ts b/src/orders.ts",
+      intent: { type: "fix", breaking: false, message: "fix: correct order total calculation", changedFiles: ["src/orders.ts"] },
+    }),
+    measure: async () => {
+      measureCallCount++;
+      return measureCallCount === 1
+        ? { status: "fail" as const, ratio: 0.2, uncovered: [{ file: "src/orders.ts", lines: [1] }] }
+        : { status: "pass" as const, ratio: 0.9 };
+    },
+    blocks: (status) => status === "fail",
+    generate: async () => ({ specs: ["a.spec.ts"], approved: true }),
+    curriculum: {
+      select: async () => [
+        { id: "ex-form-happy-path", name: "n", template: "t", archetype: "happy-path", proven: false, promotionCount: 0 },
+      ],
+      fold: async (i) => { folds.push(i); },
+    },
+  });
+  const useCase = new RunQaUseCase({ ...ports, config: { ...baseConfig, coveragePolicyMode: "enforce" } });
+
+  await useCase.run({ ...baseInput, mode: "diff", runId: "curriculum-fold-coverage-regen" });
+
+  assert.equal(measureCallCount, 2, "sanity: the enforce-mode one-shot regen must have re-measured");
+  assert.equal(folds.length, 1);
+  assert.equal(
+    folds[0]!.coverageStatus,
+    "pass",
+    "the regen's own second measurement is already the ONLY input to blocksPublish, so the fold must read that same final status and never the superseded first one",
+  );
+});
+
+test('curriculum: the fold threads a measured "unknown" verbatim — the evidence ladder, not this use-case, decides it earns no credit', async () => {
+  const folds: CurriculumFoldInput[] = [];
+  // A green run whose coverage is genuinely unmeasurable. The fold must carry "unknown" as measured
+  // rather than a constant, and classifyEvidence (cross-run-learning/domain/curriculum.ts) is what
+  // turns it into "inconclusive" — the same tier boundary DecideCoverageService keeps for publish.
+  const { ports } = stubPorts({
+    execute: async () => ({ verdict: "pass", cases: [{ name: "t", status: "pass" }], logs: "" }),
+    measure: async () => ({ status: "unknown", ratio: null }),
+    blocks: () => false,
+    curriculum: {
+      select: async () => [
+        { id: "ex-form-happy-path", name: "n", template: "t", archetype: "happy-path", proven: false, promotionCount: 0 },
+      ],
+      fold: async (i) => { folds.push(i); },
+    },
+  });
+
+  await new RunQaUseCase(ports).run({ ...baseInput, runId: "curriculum-fold-unknown-coverage" });
+
+  assert.equal(folds.length, 1);
+  assert.equal(folds[0]!.verdict, "pass");
+  assert.equal(folds[0]!.coverageStatus, "unknown", "a measured \"unknown\" is threaded honestly, never normalised to a hardcoded status");
+});

@@ -672,7 +672,15 @@ export class RunQaUseCase {
     // built. `offeredArchetypes` is hoisted to run scope because the fold at the very end must credit
     // EXACTLY the archetypes this prompt carried — never the wider matched set, and never a set
     // re-derived later from a diff that a regen may have moved past.
-    const selectedExemplars = this.deps.curriculum
+    //
+    // Conditional on `generating` (settled by classify() above): a regression run never calls
+    // GenerationPort.generate() at all — the generate phase below substitutes a synthetic
+    // { specs: [], approved: true } — so NO prompt is built, nothing is offered, and nothing may be
+    // credited. Selecting anyway would spend a store read on a result the run cannot use and would
+    // spread `skillExemplars` into baseEnrichment for a prompt that never exists, which is what the
+    // fold's own `offeredArchetypes.length > 0` guard would then have to compensate for far away
+    // from here. Keeping the set empty at the source is the single place this stays true.
+    const selectedExemplars = generating && this.deps.curriculum
       ? await this.deps.curriculum.select(classificationDiff, classificationIntent?.changedFiles ?? [])
       : [];
     const offeredArchetypes = selectedExemplars.map((e) => e.archetype);
@@ -1524,8 +1532,14 @@ export class RunQaUseCase {
     // DecideCoverageService's own status for this run, hoisted to run scope for the curriculum fold
     // at the end of the method. RunOutcome persists only the RATIO, and re-deriving pass/fail from
     // ratio-vs-minRatio at the fold site would create a second source of truth for a decision
-    // decide-coverage.service.ts already owns. `undefined` means measure() never ran (non-diff mode,
-    // coverage policy off) — distinct from a measured "unknown", and read as inconclusive either way.
+    // decide-coverage.service.ts already owns.
+    //
+    // `undefined` means the `verdict === "pass"` guard below was never satisfied — a fail/flaky run,
+    // an app_defect, or any run that terminated before reaching the measure block. It does NOT mean
+    // "non-diff mode" or "coverage policy off": the block runs on EVERY pass, and both of those
+    // cases still produce a MEASURED "unknown" (a starved diff argument, or the adapter's own
+    // mode-"off" short-circuit, both route through decide(null, policy)). So `undefined` stays
+    // distinct from a measured "unknown", even though both read as inconclusive.
     let coverageStatus: "pass" | "fail" | "unknown" | undefined;
     // FIX 3 (judgment-day D.7): the value-oracle (mutation-testing) result the legacy persists
     // alongside coverageRatio (src/pipeline.ts:3267's persistOutcome(..., valueScore, ...),

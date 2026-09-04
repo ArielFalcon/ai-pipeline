@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { detectStructuralPatterns } from "@contexts/generation/infrastructure/prompt-builders/structural-pattern.ts";
+import { detectStructuralPatterns } from "@kernel/structural-pattern.ts";
 
 // sdd/migration-wiring-phase-2 Slice 4 (D-E skill-exemplar restore): this file was deleted in Phase 1
 // as dead code (zero production callers — no caller ever threaded detectStructuralPatterns' output

@@ -1,13 +1,10 @@
-// sdd/migration-wiring-phase-2 Slice 4 (D-E skill-exemplar restore): this file was deleted during
-// Phase 1's dead-code cleanup (migration-remediation 8.B, commit 3b59b90) because it had ZERO
-// production callers — nothing ever threaded detectStructuralPatterns' output anywhere. Restored
-// VERBATIM from git history (3b59b90^) because THIS slice gives it a genuine caller: the generation
-// prompt's "skill-exemplars" section (prompts.ts), fed through OpencodeRunInput.structuralPatterns.
-// Detection logic is byte-for-byte unchanged from the original.
-//
-// migration-tier-4c Slice 5a: relocated (as a prompts.ts rider, alongside skill-exemplar.ts) from
-// src/qa/learning/structural-pattern.ts to qa-engine — prompts.ts is its only production consumer.
-import type { StructuralPattern } from "./skill-exemplar";
+// qa-engine/src/shared-kernel/structural-pattern.ts
+// Deterministic diff -> StructuralPattern detection (pure regex/extension heuristics, no LLM).
+// Relocated to the kernel alongside scenario-catalog.ts: cross-run-learning's CurriculumPortAdapter
+// needs the SAME derivation the generation prompt uses, and both must see one implementation —
+// two copies of this detector would silently diverge the "offered archetypes" the curriculum folds
+// from the ones the generator was actually shown.
+import type { StructuralPattern } from "./scenario-catalog.ts";
 
 export function detectStructuralPatterns(diff: string, changedFiles: string[]): StructuralPattern[] {
   const patterns: StructuralPattern[] = [];

@@ -1,21 +1,13 @@
-// migration-tier-4c Slice 5a: this file relocated from src/qa/learning/skill-exemplar.ts (prompts.ts's
-// own rider — prompts.ts is its ONLY production value-consumer, confirmed via a fresh grep before this
-// move). `ScenarioArchetype` structurally mirrors src/qa/learning/curriculum.ts's own type (a plain
-// string-literal union) — NOT imported: curriculum.ts stays in src/ (it has other, unrelated shell
-// consumers: src/server/intelligence-view.ts, src/server/history.ts), so qa-engine may not import it
-// (arch:check's one-way rule). Same "structurally mirror, never import" discipline this migration
-// program already uses for OcServiceLink/OcContractDrift/ParallelWorkerInput.
-export type ScenarioArchetype =
-  | "happy-path"
-  | "empty-state"
-  | "boundary-value"
-  | "invalid-input"
-  | "re-query-after-mutation"
-  | "concurrent-update"
-  | "permission-denied"
-  | "network-error"
-  | "loading-state"
-  | "stale-data";
+// qa-engine/src/shared-kernel/scenario-catalog.ts
+// The static authoring-template catalog: StructuralPattern (shape of code change) -> SkillExemplar
+// (a template to write) -> ScenarioArchetype (the kind of scenario it produces). Relocated here from
+// generation/infrastructure/prompt-builders/skill-exemplar.ts because it now has THREE consumers
+// across contexts — generation renders it, cross-run-learning scores it, qa-run-orchestration
+// threads it — and it is pure, dependency-free vocabulary. Same kernel rationale as
+// manifest-entry.ts. This is NOT a learned store: selection is pattern-shape based; the LEARNED
+// ordering over these entries lives in cross-run-learning/domain/curriculum.ts.
+import type { ScenarioArchetype } from "./scenario-archetype.ts";
+export type { ScenarioArchetype };
 
 export type StructuralPattern =
   | { kind: "form"; hasOnSubmit: boolean; hasValidation: boolean }
@@ -38,7 +30,7 @@ export interface SkillExemplar {
   archetype: ScenarioArchetype;
 }
 
-const BUILT_IN_EXEMPLARS: SkillExemplar[] = [
+export const BUILT_IN_EXEMPLARS: readonly SkillExemplar[] = [
   {
     id: "ex-form-invalid-input",
     name: "Form invalid input",

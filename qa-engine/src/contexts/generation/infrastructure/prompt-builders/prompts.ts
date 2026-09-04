@@ -58,8 +58,8 @@ import type {
   ExplorationBrief,
 } from "@contexts/generation/application/ports/generation-ports.ts";
 import { ExplorationBriefAdapter, type BriefFns } from "../exploration-brief.adapter.ts";
-import { matchExemplars, renderExemplarsForPrompt } from "./skill-exemplar.ts";
-import { detectStructuralPatterns } from "./structural-pattern.ts";
+import { matchExemplars, renderExemplarsForPrompt } from "@kernel/scenario-catalog.ts";
+import { detectStructuralPatterns } from "@kernel/structural-pattern.ts";
 import { assemble, section, type AssembledPrompt } from "./context-assembler.ts";
 import { roleWindowBytes } from "./model-window-catalog.ts";
 

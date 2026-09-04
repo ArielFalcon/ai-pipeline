@@ -18,10 +18,17 @@ describe("skill-exemplar section fits the prompt budget at the selection cap", (
       for (let j = i + 1; j < list.length; j++) {
         for (let k = j + 1; k < list.length; k++) {
           combos++;
+          const subset = [list[i]!, list[j]!, list[k]!];
           const text = renderExemplarsForPrompt(
-            [list[i]!, list[j]!, list[k]!],
+            subset,
             { proven: { [list[i]!.archetype]: 99, [list[j]!.archetype]: 99, [list[k]!.archetype]: 99 } },
           );
+          for (const exemplar of subset) {
+            assert.ok(
+              text.includes(`### ${exemplar.name} (${exemplar.archetype}) — PROVEN (99 bugs)`),
+              `subset entry ${exemplar.id} must carry its worst-case PROVEN marker`,
+            );
+          }
           assert.ok(
             Buffer.byteLength(text, "utf8") < SECTION_MAX_BYTES,
             `subset ${list[i]!.id}/${list[j]!.id}/${list[k]!.id} rendered ${Buffer.byteLength(text, "utf8")} bytes`,
@@ -30,5 +37,14 @@ describe("skill-exemplar section fits the prompt budget at the selection cap", (
       }
     }
     assert.equal(combos, 20);
+  });
+
+  it("renders no fabricated PROVEN marker for absent or zero promotion counts", () => {
+    const exemplar = BUILT_IN_EXEMPLARS[0]!;
+    const absent = renderExemplarsForPrompt([exemplar]);
+    const zero = renderExemplarsForPrompt([exemplar], { proven: { [exemplar.archetype]: 0 } });
+
+    assert.equal(absent.includes("PROVEN"), false);
+    assert.equal(zero.includes("PROVEN"), false);
   });
 });

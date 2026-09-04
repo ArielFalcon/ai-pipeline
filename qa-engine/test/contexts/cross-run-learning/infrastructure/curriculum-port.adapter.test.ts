@@ -4,10 +4,9 @@ import { CurriculumPortAdapter } from "@contexts/cross-run-learning/infrastructu
 import { initCurriculum, foldCurriculum, type Curriculum } from "@contexts/cross-run-learning/domain/curriculum.ts";
 import { MAX_SELECTED_EXEMPLARS } from "@contexts/qa-run-orchestration/application/ports/index.ts";
 
-// A diff that trips several detectStructuralPatterns branches at once (form + api-call + data-list)
-// so more exemplars match than the cap allows.
+// A diff that matches four exemplars across form, api-call and data-list, exceeding the cap of three.
 const RICH_DIFF = `
-+<form (ngSubmit)="save()"><input required minlength="3" /></form>
++<form onsubmit="save()"><input required minlength="3" /></form>
 +const res = await fetch(url, { method: 'POST', body: payload });
 +if (!res.ok) { this.error = 'failed'; }
 +<table><tr *ngFor="let row of rows"></tr></table>
@@ -25,12 +24,11 @@ function store(initial: Curriculum | null) {
 }
 
 describe("CurriculumPortAdapter.select", () => {
-  it("returns at most MAX_SELECTED_EXEMPLARS, ranked", async () => {
+  it("caps a richer match set at MAX_SELECTED_EXEMPLARS, ranked", async () => {
     const s = store(null);
     const adapter = new CurriculumPortAdapter("app", s.load, s.save);
     const selected = await adapter.select(RICH_DIFF, FILES);
-    assert.ok(selected.length > 0, "the rich diff must match at least one exemplar");
-    assert.ok(selected.length <= MAX_SELECTED_EXEMPLARS);
+    assert.equal(selected.length, MAX_SELECTED_EXEMPLARS);
   });
 
   it("puts a proven archetype first", async () => {
@@ -48,8 +46,16 @@ describe("CurriculumPortAdapter.select", () => {
   });
 
   it("returns an empty list, never throws, when the store fails", async () => {
-    const adapter = new CurriculumPortAdapter("app", () => { throw new Error("db down"); }, () => {}, () => {});
+    let logged: unknown;
+    const adapter = new CurriculumPortAdapter(
+      "app",
+      () => { throw new Error("db down"); },
+      () => {},
+      (error) => { logged = error; },
+    );
     assert.deepEqual(await adapter.select(RICH_DIFF, FILES), []);
+    assert.ok(logged instanceof Error);
+    assert.equal(logged.message, "db down");
   });
 });
 
@@ -67,6 +73,17 @@ describe("CurriculumPortAdapter.fold", () => {
     const s = store(null);
     await new CurriculumPortAdapter("app", s.load, s.save).fold({ offered: ["happy-path"], verdict: "flaky" });
     assert.equal(s.current, null);
+  });
+
+  it("does not write when every offered archetype is unknown", async () => {
+    let writes = 0;
+    const adapter = new CurriculumPortAdapter(
+      "app",
+      () => null,
+      () => { writes++; },
+    );
+    await adapter.fold({ offered: ["unknown-archetype"], verdict: "pass", coverageStatus: "pass" });
+    assert.equal(writes, 0);
   });
 
   it("swallows a store failure — never gates the run", async () => {

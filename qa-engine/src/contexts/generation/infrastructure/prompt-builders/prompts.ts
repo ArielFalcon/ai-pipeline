@@ -903,7 +903,7 @@ export function buildPromptAssembled(input: OpencodeRunInput): AssembledPrompt {
       : "";
 
   // sdd/migration-wiring-phase-2 Slice 4 (D-E skill-exemplar restore): matches each detected
-  // structural pattern against the built-in exemplar catalog (src/qa/learning/skill-exemplar.ts).
+  // structural pattern against the built-in exemplar catalog (@kernel/scenario-catalog.ts).
   // matchExemplars() itself takes a SINGULAR StructuralPattern (not an array), so this consumer
   // loops + flatMaps across input.structuralPatterns, then dedupes by exemplar name before
   // rendering — a diff can independently match multiple patterns (e.g. a form AND an api-call), and
@@ -933,7 +933,9 @@ export function buildPromptAssembled(input: OpencodeRunInput): AssembledPrompt {
       return renderExemplarsForPrompt(input.skillExemplars, { proven });
     }
     // Fallback: the local derivation, unchanged. Reached when no CurriculumPort is wired (the
-    // [SWAP]-optional default) or outside diff mode, where there is no diff to rank against.
+    // [SWAP]-optional default), outside diff mode where there is no diff to rank against, or when a
+    // wired select() returns nothing — no diff, no catalog match, or a swallowed store fault, all of
+    // which the adapter deliberately degrades to an empty list rather than propagating.
     const patterns = input.structuralPatterns?.length
       ? input.structuralPatterns
       : detectStructuralPatterns(input.diff, input.intent?.changedFiles ?? []);

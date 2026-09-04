@@ -1069,18 +1069,26 @@ const CURRICULUM_API_CALL_DIFF = [
   '+if (!res.ok) throw new Error("failed");',
 ].join("\n");
 
+// The supplied order below is deliberately at odds with EVERY ordering this renderer could
+// plausibly impose on its own: it is neither ascending nor descending by catalog index (0, 4, 3),
+// by name (F, D, R), by id (f, d, s) or by archetype (i, e, r), and the only PROVEN entry sits in
+// the MIDDLE, so a "proven first" re-sort would fail too. Ranking already happened in the adapter;
+// any sort here would decouple "what the generator was shown" from "what the curriculum folds".
+// Three entries is also the realistic maximum payload (MAX_SELECTED_EXEMPLARS).
 test("curriculum: a supplied skillExemplars list renders in the SUPPLIED order, with the inline PROVEN marker", () => {
   const text = buildPrompt(mkInput({
     diff: CURRICULUM_API_CALL_DIFF,
     skillExemplars: [
-      { id: "ex-data-list-empty", name: "Data list empty state", template: "TEMPLATE-A", archetype: "empty-state", proven: true, promotionCount: 2 },
-      { id: "ex-form-happy-path", name: "Form happy path", template: "TEMPLATE-B", archetype: "happy-path", proven: false, promotionCount: 0 },
+      { id: "ex-form-invalid-input", name: "Form invalid input", template: "TEMPLATE-A", archetype: "invalid-input", proven: false, promotionCount: 0 },
+      { id: "ex-data-list-empty", name: "Data list empty state", template: "TEMPLATE-B", archetype: "empty-state", proven: true, promotionCount: 2 },
+      { id: "ex-stateful-re-query", name: "Re-query after mutation", template: "TEMPLATE-C", archetype: "re-query-after-mutation", proven: false, promotionCount: 0 },
     ],
   }));
   assert.match(text, /### Data list empty state \(empty-state\) — PROVEN \(2 bugs\)/);
-  assert.match(text, /### Form happy path \(happy-path\)\n/);
+  assert.match(text, /### Form invalid input \(invalid-input\)\n/);
+  assert.match(text, /### Re-query after mutation \(re-query-after-mutation\)\n/);
   assert.ok(
-    text.indexOf("TEMPLATE-A") < text.indexOf("TEMPLATE-B"),
+    text.indexOf("TEMPLATE-A") < text.indexOf("TEMPLATE-B") && text.indexOf("TEMPLATE-B") < text.indexOf("TEMPLATE-C"),
     "the supplied order must be preserved — a renderer that sorts internally must fail here",
   );
   assert.ok(

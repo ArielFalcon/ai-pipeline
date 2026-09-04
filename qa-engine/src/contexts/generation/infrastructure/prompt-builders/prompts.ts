@@ -915,17 +915,25 @@ export function buildPromptAssembled(input: OpencodeRunInput): AssembledPrompt {
   // "did the rich exemplar template change generation quality" — flagging here (+ engram) so a
   // future audit can measure rich-exemplar vs one-line-diffArchetypes-hint defect-catch rate.
   //
-  // apply-batch-3 rider (orchestrator-directed): Slice 4 wired structuralPatterns[] end-to-end but
-  // nothing on the live path ever populated it (verified: zero references in run-qa.use-case.ts,
-  // generation-port.adapter.ts, rewritten-engine-factory.ts — see seam-parity.contract.test.ts's own
-  // ALLOWLIST entry for this field) — so the spec's "archetype-matched templates re-enter the
-  // generation prompt" scenario went unmet for a real run. Derived HERE instead, at the layer that
-  // already holds the diff (this function already reads input.diff for cappedDiffText above), rather
-  // than adding new qa-engine plumbing: an explicitly-supplied input.structuralPatterns (every
-  // existing test, and any future enrichment path) still wins; only a genuinely absent/empty one
-  // falls back to a local derivation from the diff already in scope.
+  // apply-batch-3 rider (orchestrator-directed): no live caller populates input.structuralPatterns,
+  // so without a local derivation the "archetype-matched templates re-enter the generation prompt"
+  // scenario went unmet for a real run. Derived HERE instead, at the layer that already holds the
+  // diff (this function already reads input.diff for cappedDiffText above), rather than adding new
+  // qa-engine plumbing: an explicitly-supplied input.structuralPatterns still wins; only a genuinely
+  // absent/empty one falls back to a local derivation from the diff already in scope.
   const skillExemplarsContent = (() => {
     if (!isGenerationMode) return "";
+    // A curriculum-ranked set is AUTHORITATIVE: it is already deduped, already ordered by this app's
+    // evidence, and already capped to fit this section's byte budget (MAX_SELECTED_EXEMPLARS, proven
+    // exhaustively in qa-engine/test/shared-kernel/scenario-catalog.test.ts). Rendering exactly what
+    // was handed down is what lets the curriculum fold "what the generator was shown" honestly.
+    if (input.skillExemplars?.length) {
+      const proven: Record<string, number> = {};
+      for (const e of input.skillExemplars) if (e.proven && e.promotionCount > 0) proven[e.archetype] = e.promotionCount;
+      return renderExemplarsForPrompt(input.skillExemplars, { proven });
+    }
+    // Fallback: the local derivation, unchanged. Reached when no CurriculumPort is wired (the
+    // [SWAP]-optional default) or outside diff mode, where there is no diff to rank against.
     const patterns = input.structuralPatterns?.length
       ? input.structuralPatterns
       : detectStructuralPatterns(input.diff, input.intent?.changedFiles ?? []);

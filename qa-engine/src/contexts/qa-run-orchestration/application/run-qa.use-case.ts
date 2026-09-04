@@ -59,6 +59,7 @@ import type {
   CrossRepoImpact,
   ConfinementPort,
   MirrorGcPort,
+  CurriculumPort,
 } from "./ports/index.ts";
 import { REVIEWER_UNAVAILABLE_MARKER } from "./ports/index.ts";
 import { decide, type RunEvidence } from "../domain/run-decision.service.ts";
@@ -295,6 +296,10 @@ export interface RunQaUseCaseDeps {
   // documented contract, mirrors ReflectorPortAdapter's) — this use-case awaits audit() with no
   // extra try/catch of its own, trusting that contract exactly like it trusts reflector's.
   processAudit?: ProcessAuditPort;
+  // [SWAP]-optional, same contract as reflector/processAudit: absent -> the run is byte-identical
+  // to today (no ranked exemplars in the prompt, no curriculum fold). Fault-isolated inside the
+  // adapter, so neither call site below needs a try/catch.
+  curriculum?: CurriculumPort;
   // [SWAP] absent -> the mainline exit's gc call is a no-op; no `git gc`, the SAME backward-
   // compatible posture reflector/confinement/processAudit already establish. sdd/migration-wiring-
   // phase-2 Slice 2 (D-B mirror-gc): fires ONCE, at the tail of the mainline exit, strictly AFTER
@@ -662,6 +667,16 @@ export class RunQaUseCase {
     }
     const retrievedRuleIds = retrievedRules.map((r) => r.id);
 
+    // Curriculum selection runs alongside learning retrieval and BEFORE the first generate() call,
+    // for the same reason: both are prompt enrichments that must be settled before any prompt is
+    // built. `offeredArchetypes` is hoisted to run scope because the fold at the very end must credit
+    // EXACTLY the archetypes this prompt carried — never the wider matched set, and never a set
+    // re-derived later from a diff that a regen may have moved past.
+    const selectedExemplars = this.deps.curriculum
+      ? await this.deps.curriculum.select(classificationDiff, classificationIntent?.changedFiles ?? [])
+      : [];
+    const offeredArchetypes = selectedExemplars.map((e) => e.archetype);
+
     // Phase: pre-generation grounding (Plan 7-R W4, audit CRITICAL). [SWAP] absent
     // PreGenerationGroundingPort -> the phase is a no-op: contextPack/existingSpecFiles stay
     // undefined, generation degrades to its own live-MCP exploration (today's behavior, unchanged).
@@ -792,6 +807,7 @@ export class RunQaUseCase {
       ...(groundingContextPack ? { contextPack: groundingContextPack } : {}),
       ...(groundingExistingSpecFiles?.length ? { existingSpecFiles: groundingExistingSpecFiles } : {}),
       ...(blastRadiusSignal ? { staticSignal: blastRadiusSignal } : {}),
+      ...(selectedExemplars.length ? { skillExemplars: selectedExemplars } : {}),
       ...(resolvedServiceLinks.length ? { serviceLinks: resolvedServiceLinks } : {}),
       ...(resolvedContractDrift.length ? { contractDrift: resolvedContractDrift } : {}),
       // Slice C (structural-signals-expansion, design §3.8): mirrors serviceLinks' own conditional-

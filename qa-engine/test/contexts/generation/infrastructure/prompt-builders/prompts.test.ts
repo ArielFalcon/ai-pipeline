@@ -1056,6 +1056,45 @@ test("rider: an explicitly-supplied structuralPatterns still wins over derivatio
   assert.ok(!text.includes("API error handling"), "the diff-derived api-call pattern must NOT also render when structuralPatterns was explicitly supplied");
 });
 
+// ── Curriculum wiring (D3/D4): a supplied, curriculum-ranked exemplar list ───────────────────────
+// input.skillExemplars is CurriculumPort.select()'s output: the same catalog entries, already
+// deduped, already ordered by this app's evidence, and already capped. It REPLACES the local
+// derivation above, and prompts.ts must render it verbatim — re-sorting here would decouple "what
+// the generator was shown" from "what the curriculum folds".
+// This diff derives the api-call pattern ("API error handling"), so a supplied list that does NOT
+// contain it proves replacement rather than addition.
+const CURRICULUM_API_CALL_DIFF = [
+  "diff --git a/src/api.ts b/src/api.ts",
+  '+const res = await fetch("/api/orders", { method: "POST", body: JSON.stringify(payload) });',
+  '+if (!res.ok) throw new Error("failed");',
+].join("\n");
+
+test("curriculum: a supplied skillExemplars list renders in the SUPPLIED order, with the inline PROVEN marker", () => {
+  const text = buildPrompt(mkInput({
+    diff: CURRICULUM_API_CALL_DIFF,
+    skillExemplars: [
+      { id: "ex-data-list-empty", name: "Data list empty state", template: "TEMPLATE-A", archetype: "empty-state", proven: true, promotionCount: 2 },
+      { id: "ex-form-happy-path", name: "Form happy path", template: "TEMPLATE-B", archetype: "happy-path", proven: false, promotionCount: 0 },
+    ],
+  }));
+  assert.match(text, /### Data list empty state \(empty-state\) — PROVEN \(2 bugs\)/);
+  assert.match(text, /### Form happy path \(happy-path\)\n/);
+  assert.ok(
+    text.indexOf("TEMPLATE-A") < text.indexOf("TEMPLATE-B"),
+    "the supplied order must be preserved — a renderer that sorts internally must fail here",
+  );
+  assert.ok(
+    !text.includes("API error handling"),
+    "a supplied list REPLACES the local diff derivation, it never appends to it",
+  );
+});
+
+test("curriculum: with no skillExemplars supplied the local diff derivation still runs ([SWAP]-absent guard)", () => {
+  const text = buildPrompt(mkInput({ diff: CURRICULUM_API_CALL_DIFF }));
+  assert.match(text, /## Skill exemplars for the detected structural patterns/);
+  assert.ok(text.includes("API error handling"), "the fallback must still render the diff-derived exemplar");
+});
+
 // ── sdd/migration-wiring-phase-2 Slice 6b (diff→model egress boundary) ────────────────────────────
 // cappedDiffText — THE single way every prompt embeds a commit diff — now sanitizes in "model" mode
 // (previously "issue" mode, silently defeating WS5.4a's own stated intent for the diff itself) and

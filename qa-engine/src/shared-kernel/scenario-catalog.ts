@@ -115,7 +115,13 @@ export function matchExemplars(pattern: StructuralPattern): SkillExemplar[] {
 // satisfies it structurally, so every existing call site is unchanged — but a curriculum-ranked
 // SelectedExemplar (which has no `description` or `pattern`) can now be passed directly, instead of
 // forcing its caller to fabricate those two fields just to satisfy the type.
-export type RenderableExemplar = Pick<SkillExemplar, "id" | "name" | "template" | "archetype">;
+// `archetype` is WIDENED to string rather than Pick'd: this function only interpolates it into a
+// heading and uses it as an opts.proven key (itself Record<string, number>), so the narrow union
+// buys nothing here — while SelectedExemplar.archetype is deliberately wide (see its own doc in
+// qa-run-orchestration's ports barrel). A Pick would keep ScenarioArchetype and reject exactly the
+// curriculum-ranked caller this type exists to admit. Narrow -> wide, so every SkillExemplar call
+// site still satisfies it unchanged.
+export type RenderableExemplar = Pick<SkillExemplar, "id" | "name" | "template"> & { archetype: string };
 
 export function renderExemplarsForPrompt(
   exemplars: readonly RenderableExemplar[],

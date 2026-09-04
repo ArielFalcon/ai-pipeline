@@ -27,6 +27,7 @@ import type {
   CrossRepoImpactPort,
   ConfinementPort,
   MirrorGcPort,
+  CurriculumPort,
 } from "@contexts/qa-run-orchestration/application/ports/index.ts";
 // reflector-rewire (design ADR-1/ADR-4/ADR-5): ReflectorPort/ReflectionInput are declared in
 // cross-run-learning (co-located with StructuredReflection/LearningRepositoryPort), NOT in this
@@ -70,6 +71,10 @@ function stubPorts(overrides: Partial<{
   capture: PreExecGroundingPort["capture"];
   ground: PreGenerationGroundingPort["ground"];
   captureReviewDom: ReviewDomGroundingPort["capture"];
+  // Port-shaped, not method-shaped like its siblings above: CurriculumPort.fold would collide with
+  // LearningPort["fold"] in this flat, method-keyed override map. Absent -> the port is omitted
+  // entirely from `ports`, exercising the [SWAP]-absent default.
+  curriculum: CurriculumPort;
 }> = {}) {
   const savedOutcomes: RunOutcome[] = [];
   const foldedOutcomes: RunOutcome[] = [];
@@ -133,6 +138,7 @@ function stubPorts(overrides: Partial<{
       ...(preExecGrounding ? { preExecGrounding } : {}),
       ...(preGenerationGrounding ? { preGenerationGrounding } : {}),
       ...(reviewDomGrounding ? { reviewDomGrounding } : {}),
+      ...(overrides.curriculum ? { curriculum: overrides.curriculum } : {}),
     },
     savedOutcomes,
     foldedOutcomes,
@@ -5964,4 +5970,71 @@ test("P0-5: wall-clock ceiling skips FixLoop regeneration without aborting the f
 
   assert.equal(generateCalls, 1, "a spent wall-clock budget must not start another agent turn");
   assert.equal(executeCalls, 1, "FixLoop must not re-execute after skipping regeneration");
+});
+
+// ── Curriculum wiring (D6): CurriculumPort.select() -> the generation enrichment ─────────────────
+// select() runs alongside learning retrieval, after classify() and before any prompt is built. Its
+// output is the ONE list the run offered the generator, so it must reach the enrichment verbatim.
+
+test("curriculum: select()'s exemplars reach the generation enrichment", async () => {
+  const seen: Array<readonly { archetype: string }[] | undefined> = [];
+  const { ports } = stubPorts({
+    generate: async (_objectives, _specDir, _signal, _diff, enrichment) => {
+      seen.push(enrichment?.skillExemplars);
+      return { specs: ["a.spec.ts"], approved: true };
+    },
+    curriculum: {
+      select: async () => [
+        { id: "ex-form-happy-path", name: "Form happy path", template: "T", archetype: "happy-path", proven: true, promotionCount: 1 },
+      ],
+      fold: async () => {},
+    },
+  });
+
+  await new RunQaUseCase(ports).run({ ...baseInput, runId: "curriculum-select" });
+
+  assert.equal(seen[0]?.length, 1);
+  assert.equal(seen[0]?.[0]?.archetype, "happy-path");
+});
+
+test("curriculum: [SWAP]-absent — no CurriculumPort means the enrichment carries no skillExemplars key at all (absent, never [])", async () => {
+  const seen: object[] = [];
+  const { ports } = stubPorts({
+    generate: async (_objectives, _specDir, _signal, _diff, enrichment) => {
+      if (enrichment) seen.push(enrichment);
+      return { specs: ["a.spec.ts"], approved: true };
+    },
+  });
+
+  await new RunQaUseCase(ports).run({ ...baseInput, runId: "curriculum-absent" });
+
+  assert.equal(seen.length, 1, "sanity: generate() must have received an enrichment object");
+  assert.equal(Object.hasOwn(seen[0]!, "skillExemplars"), false);
+});
+
+test("curriculum: select() receives the CLASSIFIED diff and changed files, not a re-derived pair", async () => {
+  // The default stubbed classify() returns diff: "" — asserting against that would pin the empty
+  // string and call it a pass, so this test supplies a real diff/intent to select against.
+  const calls: Array<{ diff: string | undefined; changedFiles: readonly string[] }> = [];
+  const { ports } = stubPorts({
+    classify: async () => ({
+      action: "generate",
+      reason: "diff touches src/api.ts",
+      diff: "+const res = await fetch(url);",
+      intent: { type: "feat", breaking: false, message: "feat: orders", changedFiles: ["src/api.ts"] },
+    }),
+    curriculum: {
+      select: async (diff, changedFiles) => {
+        calls.push({ diff, changedFiles });
+        return [];
+      },
+      fold: async () => {},
+    },
+  });
+
+  await new RunQaUseCase(ports).run({ ...baseInput, runId: "curriculum-select-args" });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0]?.diff, "+const res = await fetch(url);");
+  assert.deepEqual(calls[0]?.changedFiles, ["src/api.ts"]);
 });

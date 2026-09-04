@@ -171,6 +171,13 @@ export interface OpencodeRunInput {
   // Absent or empty = no section (never fabricated). Restoration-only: no live production caller
   // populates this yet (mirrors diffArchetypes' own still-open wiring gap into the rewritten engine).
   structuralPatterns?: StructuralPattern[];
+  // Curriculum-ranked, cap-limited exemplars (qa-run-orchestration's CurriculumPort.select). When
+  // present these REPLACE this file's local diff-derivation in prompts.ts: they are the same
+  // catalog entries, reordered by this app's evidence and capped so the section can never be
+  // dropped by its own byte budget. Absent -> the local derivation runs, byte-identical to today.
+  skillExemplars?: readonly {
+    id: string; name: string; template: string; archetype: string; proven: boolean; promotionCount: number;
+  }[];
   // Seam b: deterministic list of existing spec file paths under e2eRelDir/**/*.spec.ts, enumerated
   // by the orchestrator from the filesystem before the session starts. When non-empty and mode is
   // diff or manual, rendered as an "existing-suite-manifest" semi-stable section so the generator

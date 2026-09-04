@@ -215,6 +215,11 @@ export interface GenerationEnrichment {
   // ONLY: this string reaches the generation prompt and NOTHING else — no verdict/gate/coverage
   // path reads it (ADR-2).
   staticSignal?: string;
+  // Curriculum-ranked, cap-limited authoring templates (CurriculumPort.select). Mapped 1:1 at the
+  // GenerationPortAdapter onto OpencodeRunInput.skillExemplars, which prompts.ts renders INSTEAD of
+  // its own local diff-derived derivation. Absent -> prompts.ts falls back to that local derivation,
+  // byte-identical to today.
+  skillExemplars?: readonly SelectedExemplar[];
   // Stitcher→Generation seam (design §3.4): the deterministic cross-repo FE→BE links + contract
   // drift findings ServiceLinksPort.resolve() (below) produced. STRUCTURED, not pre-rendered —
   // unlike staticSignal above, rendering happens at the src/integrations/prompts.ts boundary (ADR-1:
@@ -853,6 +858,55 @@ export interface CrossRepoImpact {
 }
 export interface CrossRepoImpactPort {
   resolve(triggerRepo: string, triggerSha: string, resolvedLinks: readonly ServiceLink[]): Promise<CrossRepoImpact | null>;
+}
+
+// ── CurriculumPort ────────────────────────────────────────────────────────────
+// The per-app scenario-archetype prior. [SWAP]-optional on RunQaUseCaseDeps, off-path, fault-
+// isolated INSIDE the adapter — same contract as ReflectorPort/ProcessAuditPort/ConfinementPort:
+// absent means the run behaves exactly as it does today, and a curriculum fault never gates a
+// verdict or a publish decision.
+//
+// Selection lives BEHIND the port on purpose. The derivation (diff -> detectStructuralPatterns ->
+// matchExemplars -> curriculum rank -> cap) is one decision; splitting it between the use-case and
+// the prompt builder would let "what we offered" drift from "what we folded". The use-case holds
+// exactly the list it sent, which is exactly what it must fold.
+
+// The prompt-budget cap. This is a COUNT cap, not a byte cap, and it is enforced by the CALLER so
+// the rendered section can never be silently dropped by prompts.ts's own { maxBytes: 1536,
+// overflow: "drop" } — a dropped section would make every `evaluated` counter a lie. Proven safe
+// exhaustively over all C(6,3) three-exemplar subsets (qa-engine/test/shared-kernel/
+// scenario-catalog.test.ts). If that proof ever breaks, lower THIS constant; do not raise maxBytes.
+export const MAX_SELECTED_EXEMPLARS = 3;
+
+export interface SelectedExemplar {
+  id: string;
+  name: string;
+  template: string;
+  // Wide `string`, not ScenarioArchetype: this barrel is consumed by the generation bridge, and the
+  // narrow union adds nothing a caller can act on here.
+  archetype: string;
+  // caughtRealBug for THIS app — drives the prompt's inline PROVEN marker.
+  proven: boolean;
+  promotionCount: number;
+}
+
+export interface CurriculumFoldInput {
+  // The archetypes actually RENDERED into this run's generation prompt (SelectedExemplar.archetype
+  // of what select() returned) — never the wider matched set.
+  offered: readonly string[];
+  verdict: RunVerdict;
+  // RunOutcome.adjudication?.class (wide string, kernel convention).
+  adjudicationClass?: string;
+  // DecideCoverageService's status for this run, as returned by ObjectiveSignalPort.measure().
+  // Absent -> treated as unmeasured, which classifyEvidence reads as inconclusive.
+  coverageStatus?: "pass" | "fail" | "unknown";
+}
+
+export interface CurriculumPort {
+  // diff absent (every non-diff mode) -> [] : no structural patterns, so nothing was offered and
+  // nothing can be folded. The gate is data-driven, not a mode branch.
+  select(diff: string | undefined, changedFiles: readonly string[]): Promise<readonly SelectedExemplar[]>;
+  fold(input: CurriculumFoldInput): Promise<void>;
 }
 
 // ConfinementPort — sdd/migration-remediation Slice 3 (P0 write-confinement wiring, D-P0b). Detects

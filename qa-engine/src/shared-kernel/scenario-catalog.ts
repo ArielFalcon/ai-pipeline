@@ -107,7 +107,20 @@ export function matchExemplars(pattern: StructuralPattern): SkillExemplar[] {
   });
 }
 
-export function renderExemplarsForPrompt(exemplars: SkillExemplar[]): string {
+// opts.proven maps a ScenarioArchetype to its promotionCount (the number of times the adjudicator
+// classified a run offering it as app_defect). A marked heading attaches the evidence directly to
+// the template it justifies — 17 characters, versus a whole extra prompt section restating archetype
+// names these headings already carry. Absent/zero -> no marker, never a fabricated claim.
+// The parameter is NARROWED to the four fields this function actually reads. A full SkillExemplar
+// satisfies it structurally, so every existing call site is unchanged — but a curriculum-ranked
+// SelectedExemplar (which has no `description` or `pattern`) can now be passed directly, instead of
+// forcing its caller to fabricate those two fields just to satisfy the type.
+export type RenderableExemplar = Pick<SkillExemplar, "id" | "name" | "template" | "archetype">;
+
+export function renderExemplarsForPrompt(
+  exemplars: readonly RenderableExemplar[],
+  opts?: { proven?: Readonly<Record<string, number>> },
+): string {
   if (exemplars.length === 0) return "";
 
   const lines = [
@@ -117,7 +130,9 @@ export function renderExemplarsForPrompt(exemplars: SkillExemplar[]): string {
   ];
 
   for (const e of exemplars) {
-    lines.push(`### ${e.name} (${e.archetype})`);
+    const bugs = opts?.proven?.[e.archetype] ?? 0;
+    const marker = bugs > 0 ? ` — PROVEN (${bugs} ${bugs === 1 ? "bug" : "bugs"})` : "";
+    lines.push(`### ${e.name} (${e.archetype})${marker}`);
     lines.push(e.template);
     lines.push("");
   }

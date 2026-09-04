@@ -5,13 +5,10 @@
 // / context-pack.ts, Plan 7.4a/7.4b) and the leaf `node:fs` enumeration, mirroring legacy's own
 // Seam b closure VERBATIM (src/pipeline.ts:1848-1872's globSpecs).
 //
-// Explorer pass NOT wired here (out of this bridge's scope — see PreGenerationGroundingPort's own
-// header): no ExplorationBrief is threaded, so buildContextPack's `brief` input stays undefined and
-// its DOM/blast-radius components degrade to whatever the (optional) contextMap/prChangedFiles
-// inputs alone can produce — the SAME graceful degradation legacy documents for "explorer disabled"
-// (pipeline.ts:2073's "The explorer is best-effort: failure -> no brief -> pack degrades to DOM+
-// contracts"). A future bridge can widen this collaborator set to also run the explorer pass without
-// touching RunQaUseCase or the port contract.
+// Explorer pass is optional (P0-3): when collaborators.exploreBrief is wired, ground() runs it
+// fail-open and forwards the brief to buildContextPack. When omitted, brief stays undefined and
+// the pack degrades to DOM+contracts — the SAME graceful degradation legacy documents for
+// "explorer disabled".
 //
 // Fail-open (mirrors legacy's own non-blocking try/catch at both call sites, pipeline.ts:2084-2101 +
 // :2104-2137, and the Seam b try/catch at :1849-1872): every collaborator call is wrapped so a
@@ -21,7 +18,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { buildContextPack, defaultContextPackDeps } from "@contexts/generation/infrastructure/context-pack.ts";
 import type { ContextPackDeps } from "@contexts/generation/infrastructure/context-pack.ts";
-import type { ArchitectureContext } from "@contexts/generation/application/ports/generation-ports.ts";
+import type { ArchitectureContext, ExplorationBrief } from "@contexts/generation/application/ports/generation-ports.ts";
 import { readManifest } from "@contexts/generation/infrastructure/manifest-fs.ts";
 import { DiffParserService } from "@kernel/diff-parser/diff-parser.service.ts";
 import { raceWithAbort, isAbortError } from "./abort-race.ts";
@@ -50,6 +47,9 @@ export interface PreGenerationGroundingCollaborators {
   // loadContextMapFromDisk`), the SAME posture buildContextPack above already establishes — so
   // CompositionConfig.groundingCollaborators stays `{}` in production, unaffected by this field.
   loadContextMap?: (specDir: string) => ArchitectureContext | undefined;
+  // P0-3: optional explorer pass. When present, ground() calls it fail-open BEFORE buildContextPack
+  // and forwards the brief. Absent (explorer disabled / not wired) → brief stays undefined.
+  exploreBrief?: (args: { specDir: string; diff?: string; signal?: AbortSignal }) => Promise<ExplorationBrief | undefined>;
 }
 
 // sdd/migration-wiring-phase-2 Slice 3 (D-C contextMap read-back): a minimal, faithful structural
@@ -225,9 +225,19 @@ export class PreGenerationGroundingPortAdapter implements PreGenerationGrounding
       console.warn(`[qa] WARNING: existing-spec enumeration failed (non-blocking): ${err instanceof Error ? err.message : String(err)}`);
     }
 
-    // Context pack: brief is intentionally undefined (explorer pass not wired at this bridge —
-    // see this file's own header). Degrades to contextMap-only contract filtering + no DOM/blast
-    // radius when no brief is present, matching buildContextPack's own documented fallback.
+    // P0-3: explorer pass is optional and fail-open. A throw or absent collaborator leaves brief
+    // undefined so the pack degrades to DOM+contracts (legacy "explorer disabled").
+    let brief: ExplorationBrief | undefined;
+    if (this.collaborators.exploreBrief) {
+      try {
+        brief = await this.collaborators.exploreBrief({ specDir, ...(diff !== undefined ? { diff } : {}), ...(signal ? { signal } : {}) });
+      } catch (err) {
+        console.warn(`[qa] WARNING: explorer pass failed (non-blocking): ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+
+    // Context pack: brief is the explorer distillate when wired (P0-3); otherwise undefined so
+    // the pack degrades to contextMap-only contract filtering + no DOM/blast radius.
     //
     // FIX 1b (judgment-day W4 abort-plumbing): buildContextPack (context-pack.ts) does NOT accept
     // an AbortSignal — a pre-existing legacy-parity gap (the underlying Playwright render has its
@@ -263,6 +273,7 @@ export class PreGenerationGroundingPortAdapter implements PreGenerationGrounding
           contextMap,
           prChangedFiles: this.ctx.prChangedFiles,
           testIdAttribute: this.ctx.testIdAttribute,
+          ...(brief ? { brief } : {}),
           ...(deterministicRoutes?.length ? { routes: deterministicRoutes } : {}),
           ...(changedElements?.length ? { changedElements } : {}),
         },

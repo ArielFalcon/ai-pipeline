@@ -102,6 +102,11 @@ export interface CompositionConfig {
   maxRetries: number;
   isCode: boolean;
   coveragePolicyMode: "off" | "signal" | "enforce";
+  // P0-5: per-mode agent session budget (ms). Factory maps agentTimeout(mode). Optional so
+  // composition fakes that omit it keep the use-case default (0 = derived but not enforced).
+  agentTimeoutMs?: number;
+  wallClockBudgetMs?: number;
+  iterationBudget?: number;
   guidance?: string;
   diff?: string;
   baseUrl?: string;
@@ -745,6 +750,9 @@ function wireBridges(cfg: CompositionConfig): Omit<RewrittenOrchestratorAdapterD
       maxRetries: cfg.maxRetries,
       isCode: cfg.isCode,
       coveragePolicyMode: cfg.coveragePolicyMode,
+      ...(cfg.agentTimeoutMs !== undefined ? { agentTimeoutMs: cfg.agentTimeoutMs } : {}),
+      ...(cfg.wallClockBudgetMs !== undefined ? { wallClockBudgetMs: cfg.wallClockBudgetMs } : {}),
+      ...(cfg.iterationBudget !== undefined ? { iterationBudget: cfg.iterationBudget } : {}),
     },
   };
 }

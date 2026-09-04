@@ -5906,3 +5906,62 @@ test("parentRunId (Slice 5): an enforce-mode coverage-regen never fabricates its
   assert.equal(measureCallCount, 2, "the regen genuinely fired");
   assert.equal(publishedParentRunId, "prior-run-xyz789", "the regen must never invent its own parentRunId — only the original run's input carries one");
 });
+
+// P0-1 (alpha audit): FixLoop computes retryNs = `${namespace}-r${n}` and the ExecutionPort
+// adapter already honours opts.namespace — but the use-case FixLoopExecutionPort closure was
+// dropping it, so every retry reused the first-run test-data namespace (PetClinic cardinality).
+test("P0-1: FixLoop retry execute() forwards the per-attempt retryNs as ExecutionOpts.namespace", async () => {
+  const capturedNamespaces: (string | undefined)[] = [];
+  const capturedMeasureNamespaces: (string | undefined)[] = [];
+  let executeCalls = 0;
+  const { ports } = stubPorts({
+    execute: async (_specDir, opts) => {
+      executeCalls++;
+      capturedNamespaces.push(typeof opts === "object" && opts && !(opts instanceof AbortSignal) ? opts.namespace : undefined);
+      if (executeCalls === 1) {
+        return { verdict: "fail", cases: [{ name: "owners", status: "fail", detail: "boom", file: "owners.spec.ts" }], logs: "" };
+      }
+      return { verdict: "pass", cases: [{ name: "owners", status: "pass", file: "owners.spec.ts" }], logs: "" };
+    },
+    measure: async (_br, _specDir, _diff, _baseline, opts) => {
+      capturedMeasureNamespaces.push(opts?.namespace);
+      return { status: "unknown" as const, ratio: null };
+    },
+  });
+  const useCase = new RunQaUseCase({ ...ports, config: { ...baseConfig, needsReview: false } });
+
+  const out = await useCase.run({ ...baseInput, runId: "retry-ns-p0-1" });
+
+  assert.notEqual(out.decision.verdict, "invalid", "sanity: the run must reach FixLoop, not hold invalid earlier");
+  assert.ok(executeCalls >= 2, `expected initial execute + at least one FixLoop retry, got ${executeCalls}`);
+  const retryNs = capturedNamespaces.slice(1).find((ns) => typeof ns === "string" && ns.endsWith("-r1"));
+  assert.equal(retryNs, "retry-ns-p0-1-r1", "FixLoop retry must execute under ${runId}-r1 so test data does not collide with the first attempt");
+  assert.equal(capturedMeasureNamespaces[0], "retry-ns-p0-1-r1", "post-FixLoop measure must read coverage dumps from the winning retry namespace, not the first-run prefix");
+});
+
+test("P0-5: wall-clock ceiling skips FixLoop regeneration without aborting the first generate", async () => {
+  let generateCalls = 0;
+  let executeCalls = 0;
+  const { ports } = stubPorts({
+    generate: async () => {
+      generateCalls++;
+      // WallClockBudget.exhausted is elapsedMs > budgetMs. Stubbed generate+execute can finish
+      // in the same millisecond as startedAt, so a 1ms ceiling would not trip without a delay.
+      await new Promise((r) => setTimeout(r, 5));
+      return { specs: ["a.spec.ts"], approved: true };
+    },
+    execute: async () => {
+      executeCalls++;
+      return { verdict: "fail", cases: [{ name: "owners", status: "fail", detail: "boom", file: "owners.spec.ts" }], logs: "" };
+    },
+  });
+  const useCase = new RunQaUseCase({
+    ...ports,
+    config: { ...baseConfig, needsReview: false, agentTimeoutMs: 60_000, wallClockBudgetMs: 1 },
+  });
+
+  await useCase.run({ ...baseInput, runId: "wall-clock-p0-5" });
+
+  assert.equal(generateCalls, 1, "a spent wall-clock budget must not start another agent turn");
+  assert.equal(executeCalls, 1, "FixLoop must not re-execute after skipping regeneration");
+});

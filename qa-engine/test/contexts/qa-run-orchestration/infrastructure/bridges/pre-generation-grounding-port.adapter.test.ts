@@ -532,3 +532,47 @@ test("ground(): an in-flight abort unblocks the caller promptly, even when build
   // NOT a throw, so a caller without a signal?.aborted check after this call is not broken.
   assert.equal(result.contextPack, undefined);
 });
+
+test("P0-3: exploreBrief collaborator result is forwarded to buildContextPack as brief", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "qa-grounding-explorer-"));
+  try {
+    const brief = { builtForSha: "abc1234", objective: "checkout", blastRadius: [{ symbol: "Pay", file: "pay.ts", role: "charges" }] };
+    let seenBrief: unknown;
+    const adapter = new PreGenerationGroundingPortAdapter(
+      { e2eDir: dir },
+      {
+        exploreBrief: async () => brief,
+        buildContextPack: async (input) => {
+          seenBrief = input.brief;
+          return { text: "## pack", blastRadiusBytes: 1, domBytes: 0, contractBytes: 0 };
+        },
+      },
+    );
+    await adapter.ground(dir, undefined, "diff --git a/pay.ts b/pay.ts\n");
+    assert.equal(seenBrief, brief);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("P0-3: exploreBrief throw is fail-open — pack still builds without a brief", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "qa-grounding-explorer-fail-"));
+  try {
+    let seenBrief: unknown = "unset";
+    const adapter = new PreGenerationGroundingPortAdapter(
+      { e2eDir: dir },
+      {
+        exploreBrief: async () => { throw new Error("explorer timed out"); },
+        buildContextPack: async (input) => {
+          seenBrief = input.brief;
+          return { text: "## pack", blastRadiusBytes: 0, domBytes: 0, contractBytes: 0 };
+        },
+      },
+    );
+    const result = await adapter.ground(dir);
+    assert.equal(result.contextPack, "## pack");
+    assert.equal(seenBrief, undefined);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

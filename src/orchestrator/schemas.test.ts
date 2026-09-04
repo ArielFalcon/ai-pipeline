@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { AppConfigSchema, ManifestEntrySchema } from "./schemas";
+import { AppConfigSchema, ManifestEntrySchema, resolveValueOraclePolicy } from "./schemas";
 
 const base = {
   name: "shop",
@@ -235,4 +235,16 @@ test("boundaries[]: code:true app with non-empty boundaries[] THROWS (boundaries
 test("boundaries[]: code:true app with NO boundaries[] still parses (empty/absent never blocked by the refine)", () => {
   const cfg = AppConfigSchema.parse({ ...base, dev: undefined, code: true });
   assert.equal(cfg.boundaries, undefined);
+});
+
+// P0-2: YAML `qa.valueOracle` plus the shadow-aware default the CLI already reports.
+test("resolveValueOraclePolicy: an explicit valueOracle wins over shadow", () => {
+  assert.equal(resolveValueOraclePolicy({ valueOracle: "signal", shadow: true }), "signal");
+  assert.equal(resolveValueOraclePolicy({ valueOracle: "off", shadow: false }), "off");
+});
+
+test("resolveValueOraclePolicy: omitted valueOracle is off while shadowing, signal otherwise", () => {
+  assert.equal(resolveValueOraclePolicy({ shadow: true }), "off");
+  assert.equal(resolveValueOraclePolicy({ shadow: false }), "signal");
+  assert.equal(resolveValueOraclePolicy({}), "signal");
 });

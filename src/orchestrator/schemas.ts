@@ -77,14 +77,14 @@ export const AppConfigSchema = z
       shadow: z.boolean().optional(),
       // Diff-mode fan-out: when true, a diff run plans the blast radius into objectives
       // and dispatches parallel qa-workers (>=2 objectives; single-agent otherwise).
-      // Default off: protects cost/determinism for simple apps.
+      // SCHEMA-ONLY (not implemented): YAML parses the flag; the engine ignores it. Do not
+      // treat a true value as parallel generation.
       parallelDiff: z.boolean().optional(),
       // Fase 3: run a read-only explorer pass before the generator on single-agent diff runs, so the
       // generator gets a distilled blast-radius brief instead of re-exploring. Default off (cost/opt-in).
       explorer: z.boolean().optional(),
-      // RE-3: keep ONE generator session alive across a run's regeneration cycles, so the fix-loop /
-      // coverage retries CONTINUE it (a short follow-up prompt) instead of re-orienting from a fresh
-      // session. Default off — higher-risk (a long-lived session); opt-in per app once trusted.
+      // SCHEMA-ONLY (not implemented): YAML parses the flag; fix-loop / coverage retries still
+      // open a fresh generator session. Do not treat a true value as session reuse.
       sessionContinuity: z.boolean().optional(),
       // Change-coverage policy (the value keystone). off = skip; signal (default) = measure +
       // record only; enforce = also try to close the gap and block publishing if it stays low.
@@ -102,10 +102,7 @@ export const AppConfigSchema = z
       // (codebaseMemory + serviceTopology) at the factory; signal (default) = today's behavior
       // byte-for-byte. NO `enforce`: advisory signals have no block semantics.
       structuralSignals: z.object({ mode: z.enum(["off", "signal"]) }).optional(),
-      // Per-spec-file triage and dual publish (quality-filtered-dual-publish). Default OFF.
-      // When true the decide step classifies each spec file into PR / ISSUE / DROP and can
-      // simultaneously open a PR for the green subset and an Issue for the real-bug subset.
-      // Flag OFF (the default) → today's all-or-nothing decide path verbatim.
+      // SCHEMA-ONLY (not implemented): YAML parses the flag; decide stays all-or-nothing.
       specTriage: z.boolean().optional(),
       // Run-intelligence report tuning. `weights` overrides the ranker's per-insight interestingness
       // weight by insight id (e.g. { "change-coverage": 1.5 }); ids left out keep their defaults.
@@ -186,6 +183,16 @@ export const AppConfigSchema = z
 
 export type ValidatedAppConfig = z.infer<typeof AppConfigSchema>;
 export type ServiceConfig = NonNullable<ValidatedAppConfig["services"]>[number];
+
+// Resolved value-oracle policy. An explicit `qa.valueOracle` wins; otherwise shadow apps default
+// to off (do not double-run DEV while onboarding) and production apps default to signal.
+export type ValueOraclePolicy = "off" | "signal";
+export function resolveValueOraclePolicy(qa: {
+  valueOracle?: ValueOraclePolicy;
+  shadow?: boolean;
+}): ValueOraclePolicy {
+  return qa.valueOracle ?? (qa.shadow ? "off" : "signal");
+}
 
 // ── Manifest entry schema ─────────────────────────────────────────────────────
 // Per-test metadata that lives in e2e/.qa/manifest.json. Validates the day-one

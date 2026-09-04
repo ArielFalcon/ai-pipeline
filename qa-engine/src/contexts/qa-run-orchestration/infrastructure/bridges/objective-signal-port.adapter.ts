@@ -64,6 +64,11 @@ export class ObjectiveSignalPortAdapter implements ObjectiveSignalPort {
     // composition-time namespace — the SAME collector call it always made — instead of the regen's
     // own `${runId}-coverage-regen` dumps its namespace-overridden execute() call actually wrote.
     const namespace = opts?.namespace ?? this.ctx.namespace ?? br.sha.toString();
+    // P0-5: coverage.mode "off" skips BOTH collector IO and the value oracle — YAML honesty.
+    // decide() still sees null coverage → "unknown" (never blocks). valueScore stays absent.
+    if (this.ctx.policy.mode === "off") {
+      return { status: this.deps.decide.decide(null, this.ctx.policy), ratio: null };
+    }
     // CHANGED-FILES THREADING: derive the run's real changed files from the diff (reusing the
     // already-ported parseDiffHunks — no new domain logic) and pass them PER-CALL to the collector.
     // This is what lets V8BrowserCoverageAdapter/JacocoCoverageAdapter's URL/package->repo-file

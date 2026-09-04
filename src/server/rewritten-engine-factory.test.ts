@@ -12,6 +12,7 @@ import { SqliteLearningRepository } from "@contexts/cross-run-learning/infrastru
 import { Sha } from "@kernel/sha";
 import {
   REVIEWER_TIMEOUT_MS,
+  agentTimeout,
   withUsageSink,
   withStallWatchdog,
   withSessionRegistration,
@@ -177,6 +178,12 @@ test("buildRewrittenCompositionConfig sets reviewTimeoutMs to the exported REVIE
   assert.equal(config.reviewTimeoutMs, REVIEWER_TIMEOUT_MS, "the reviewer must get its OWN purpose-built budget, not the dispatcher's coarse ceiling");
 });
 
+test("P0-5: factory threads agentTimeout(mode) into CompositionConfig.agentTimeoutMs", () => {
+  const app = cfg("factory-agent-timeout");
+  const config = buildRewrittenCompositionConfig(app, { getAgentDeps: stubAgentDeps }, "qa-bot-abc1234-run1", { mode: "diff" });
+  assert.equal(config.agentTimeoutMs, agentTimeout("diff"));
+});
+
 // ── W4 follow-up (Task #37 audit CRITICAL, a9e7dfb) — grounding collaborators ──────────────────────
 // a9e7dfb wired PreGenerationGroundingPort/ReviewDomGroundingPort into composition-root.ts's
 // wireBridges() but the production factory never supplied groundingCollaborators/
@@ -192,6 +199,12 @@ test("buildRewrittenCompositionConfig wires empty (real-default-resolving) groun
   const config = buildRewrittenCompositionConfig(app, { getAgentDeps: stubAgentDeps }, "qa-bot-abc1234-run1", { mode: "diff" });
   assert.deepEqual(config.groundingCollaborators, {}, "an empty object lets PreGenerationGroundingPortAdapter fall back to the real buildContextPack/defaultContextPackDeps");
   assert.deepEqual(config.reviewDomGroundingCollaborators, {}, "an empty object lets ReviewDomGroundingPortAdapter fall back to the real captureDom/defaultCaptureDomDeps");
+});
+
+test("P0-3: explorer:true wires groundingCollaborators.exploreBrief for an e2e app", () => {
+  const app: AppConfig = { ...cfg("factory-explorer"), qa: { ...cfg("factory-explorer").qa, explorer: true } };
+  const config = buildRewrittenCompositionConfig(app, { getAgentDeps: stubAgentDeps }, "qa-bot-abc1234-run1", { mode: "diff" });
+  assert.equal(typeof config.groundingCollaborators?.exploreBrief, "function");
 });
 
 test("buildRewrittenCompositionConfig still wires groundingCollaborators for a code-mode app (composition-root.ts's own isCode guard is the actual skip point, not the factory)", () => {
@@ -460,6 +473,39 @@ test("buildRewrittenCompositionConfig selects the code target + Stryker oracle f
   assert.equal(config.isCode, true);
   assert.equal(config.versionUrl, undefined, "a code-mode app has no dev.versionUrl — no deploy gate");
   assert.equal(config.versionPoll, undefined);
+});
+
+// P0-2: AppConfig.qa.valueOracle was schema-only — the factory always constructed
+// FaultInjectionOracleAdapter (e2e) / StrykerMutationOracleAdapter (code), so portfolio's
+// valueOracle:"off" still fault-injected on every green run.
+test("P0-2: e2e + valueOracle off wires NullValueOracleAdapter (no fault-injection)", () => {
+  const app: AppConfig = { ...cfg("factory-oracle-off"), qa: { ...cfg("factory-oracle-off").qa, valueOracle: "off" } };
+  const config = buildRewrittenCompositionConfig(app, { getAgentDeps: stubAgentDeps }, "qa-bot-abc1234-run1", { mode: "diff" });
+  assert.equal(config.objectiveSignal.oracle.constructor.name, "NullValueOracleAdapter");
+});
+
+test("P0-2: e2e shadow with omitted valueOracle wires NullValueOracleAdapter (shadow-aware default)", () => {
+  const app = cfg("factory-oracle-shadow-default");
+  const config = buildRewrittenCompositionConfig(app, { getAgentDeps: stubAgentDeps }, "qa-bot-abc1234-run1", { mode: "diff" });
+  assert.equal(config.objectiveSignal.oracle.constructor.name, "NullValueOracleAdapter");
+});
+
+test("P0-2: e2e + valueOracle signal wires FaultInjectionOracleAdapter even in shadow", () => {
+  const app: AppConfig = { ...cfg("factory-oracle-signal"), qa: { ...cfg("factory-oracle-signal").qa, shadow: true, valueOracle: "signal" } };
+  const config = buildRewrittenCompositionConfig(app, { getAgentDeps: stubAgentDeps }, "qa-bot-abc1234-run1", { mode: "diff" });
+  assert.equal(config.objectiveSignal.oracle.constructor.name, "FaultInjectionOracleAdapter");
+});
+
+test("P0-2: code + valueOracle off wires NullValueOracleAdapter (no Stryker)", () => {
+  const app: AppConfig = { ...cfg("factory-oracle-code-off"), code: true, dev: undefined, qa: { ...cfg("factory-oracle-code-off").qa, valueOracle: "off" } };
+  const config = buildRewrittenCompositionConfig(app, { getAgentDeps: stubAgentDeps }, "qa-bot-def5678-run2", { mode: "diff" });
+  assert.equal(config.objectiveSignal.oracle.constructor.name, "NullValueOracleAdapter");
+});
+
+test("P0-2: code + valueOracle signal wires StrykerMutationOracleAdapter", () => {
+  const app: AppConfig = { ...cfg("factory-oracle-code-signal"), code: true, dev: undefined, qa: { ...cfg("factory-oracle-code-signal").qa, shadow: false, valueOracle: "signal" } };
+  const config = buildRewrittenCompositionConfig(app, { getAgentDeps: stubAgentDeps }, "qa-bot-def5678-run2", { mode: "diff" });
+  assert.equal(config.objectiveSignal.oracle.constructor.name, "StrykerMutationOracleAdapter");
 });
 
 test("buildRewrittenCompositionConfig honors coveragePolicy from app.qa.changeCoverage", () => {
@@ -1235,6 +1281,27 @@ test("historyLearningStore(appName).recordOutcome() — empty rulesRetrieved is 
   const rows = listLearningRules(app, 10);
   const r = rows.find((row) => row.id === ruleId);
   assert.equal(r?.outcomeCount, 0, "no rulesRetrieved means no recordRuleOutcome call at all — ledger untouched");
+});
+
+test("Ola 2: recordOutcome persists a scorecard entry even when rulesRetrieved is empty", async () => {
+  const { historyLearningStore } = await import("./rewritten-engine-factory");
+  const { loadScorecard } = await import("./history");
+  const app = `factory-scorecard-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const store = historyLearningStore(app);
+
+  store.recordOutcome({
+    runId: "run-scorecard-1", app, sha: "abc1234567", mode: "diff", target: "e2e", verdict: "pass",
+    errorClass: null,
+    gateSignals: { static: true, coverageRatio: 0.8, valueScore: 0.75, reviewerCorrections: [], flaky: false, retries: 0 },
+    rulesRetrieved: [],
+    at: "2026-09-04T12:00:00.000Z",
+  } as never);
+
+  const sc = loadScorecard(app);
+  assert.ok(sc, "scorecard must be written so the TUI/CLI flywheel is not an empty reader of a dead writer");
+  assert.equal(sc?.summary.measuredRuns, 1);
+  assert.equal(sc?.summary.lastValueScore, 0.75);
+  assert.equal(sc?.entries[0]?.runId, "run-scorecard-1");
 });
 
 test("historyLearningStore(appName).recordOutcome() — prevention path scores via preventionOutcome(rule.errorClass, outcome.errorClass) when valueScore is null", async () => {

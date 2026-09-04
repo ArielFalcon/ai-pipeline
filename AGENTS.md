@@ -12,7 +12,7 @@ No build step — TypeScript runs directly via `tsx`.
 
 ```bash
 npm install               # required once
-npm test                  # node:test via tsx; 96 tests, network/OpenCode/Playwright stubbed
+npm test                  # node:test via tsx; 900+ tests, network/OpenCode/Codex/Playwright stubbed
 npm run typecheck         # tsc --noEmit (strict, noUncheckedIndexedAccess)
 
 # Run a single test file or filter by name:
@@ -45,18 +45,21 @@ doppler run -- docker compose up --build   # prod: Doppler injects secrets
 | `orchestrator` | Deterministic infra: webhook, sequential queue, deploy gate, working copy, harness (validate + execute), publish/report. Node/TS via `tsx`. | `src/` |
 | `agents` | Agentic engine: supervisor fronting both runtimes (OpenCode `opencode serve` + Codex `codex exec`) + MCPs (Serena for code nav, engram for memory). Writes `.spec.ts` into working copy. | `agents/` |
 
-**Fundamental split**: deterministic infra (`src/`) is rigorously separated from the non-deterministic agent (`agents/`). They communicate over one HTTP boundary: `src/integrations/opencode-client.ts` ↔ `opencode serve`.
+**Fundamental split**: deterministic infra (`src/`) is rigorously separated from the non-deterministic agent (`agents/`). Engine logic lives in `qa-engine/`. The shell talks to OpenCode via `src/integrations/opencode-client.ts` (thin SDK primitives).
 
-### Run flow (`src/pipeline.ts` — read first)
+### Run flow (`qa-engine/.../run-qa.use-case.ts` — read first)
+
+`RunQaUseCase` is the only engine. Both the webhook (`src/index.ts`) and `npm run qa` funnel through `src/server/runner.ts` → `src/server/rewritten-engine-factory.ts`.
 
 1. **Gate** — wait until DEV serves this SHA (`/version`). Skipped if `dev.versionUrl` absent.
 2. **Working copy + classify** — clone/checkout SHA; extract diff + message; classify commit (Conventional Commits, cross-checked against diff). `skip` → returns `skipped` without spending a token.
 3. **Setup** — bootstrap `config/e2e/` seed into repo's `e2e/` if missing, then `npm ci`.
-4. **Generate** — OpenCode session; agent derives objective from commit intent, writes/improves specs. **Agent-approved + zero specs → `skipped`** (valid no-op).
+4. **Generate** — agent session (OpenCode or Codex); derives objective from commit intent, writes/improves specs. **Agent-approved + zero specs → `skipped`** (valid no-op).
 5. **Validate** — static gate: `tsc` + ESLint (`eslint-plugin-playwright`) + `playwright --list` + manifest. Fail → `invalid`.
 6. **Health pre-flight** — DEV down → `infra-error`.
 7. **Execute** — Playwright against DEV; classify `pass`/`fail`/`flaky`.
-8. **Decide** — green + reviewer-approved → PR w/ auto-merge. Reviewer rejected, or `fail`/`invalid` → Issue. `flaky` → quarantine. Green with no `e2e/` changes → nothing.
+8. **Change-coverage** — measure whether the green run exercised the diff's changed lines (`signal` records; `enforce` can hold the PR). `unknown` never blocks.
+9. **Decide** — green + reviewer-approved (+ coverage not blocking) → PR w/ auto-merge. Reviewer rejected, or `fail`/`invalid` → Issue. `flaky` → quarantine. Green with no `e2e/` changes → nothing.
 
 **Verdicts**: `pass | fail | flaky | invalid | infra-error | skipped`.
 
@@ -69,7 +72,7 @@ doppler run -- docker compose up --build   # prod: Doppler injects secrets
 
 ### DI = testing strategy
 
-Every side-effecting step is injected via `*Deps` interfaces (`PipelineDeps`, etc.) with `default*Deps()` wiring the real ones. Orchestration logic is unit-tested with stubs. Real integrations are the deliberately-uncovered boundaries. New side-effecting code → follow the `*Deps` + `default*Deps` pattern.
+Every side-effecting step is injected via hexagonal ports (`RunQaUseCaseDeps`, composition in `src/server/rewritten-engine-factory.ts`). Orchestration logic is unit-tested with stubs. Real integrations are the deliberately-uncovered boundaries.
 
 ### Agent layers (`agents/`)
 
@@ -107,7 +110,11 @@ The quality loop is circular: one LLM generates, another reviews, and the harnes
 
 ## Current state
 
-`main` runs end-to-end against `ArielFalcon/portfolio` (Astro static site on Vercel) in **shadow mode** with deploy gate skipped (no `/version`). engram is disabled (`enabled: false` in `opencode.json`) to keep smoke minimal.
+Several apps are wired in `config/apps/` across the current **Java + JavaScript/TypeScript** scope — interchangeable test targets, never design inputs: `jhipster-store`, `petclinic` and `portfolio` run in **e2e** mode against live DEV in **shadow mode**; `panchito` runs in **code** mode (`code: true`). The deploy gate is skipped wherever no `versionUrl` is configured. engram is enabled for persistent agent memory across runs.
+
+The `src/` → `qa-engine/` migration is **complete**: new engine logic targets `qa-engine/`; `src/` is the declared shell (composition root, control plane, provider I/O, persistence). `qa-engine` never imports `src/` (`npm run arch:check`).
+
+Controlled alpha demo: `portfolio`, `shadow: true`, `--mode manual`, narrow homepage guidance. Do not load untracked apps with `shadow: false`.
 
 ## Persistence
 
@@ -120,19 +127,16 @@ The quality loop is circular: one LLM generates, another reviews, and the harnes
 
 | Path | Purpose |
 |---|---|
-| `src/pipeline.ts` | Full orchestration — read first |
+| `qa-engine/src/contexts/qa-run-orchestration/application/run-qa.use-case.ts` | Full orchestration — read first |
+| `src/server/rewritten-engine-factory.ts` | Composition root: AppConfig → engine |
 | `src/index.ts` | Webhook service entry point |
 | `src/cli.ts` | Manual trigger (`npm run qa`) |
 | `src/types.ts` | Shared type contracts |
-| `src/integrations/opencode-client.ts` | HTTP boundary to `opencode serve` |
+| `src/integrations/opencode-client.ts` | Thin HTTP/SDK boundary to `opencode serve` |
 | `src/integrations/repo-mirror.ts` | Clone/checkout/copy working mirrors |
 | `src/integrations/publish.ts` | PR + Issue publishing |
 | `src/integrations/github.ts` | GitHub API |
-| `src/qa/setup.ts` | Bootstrap `e2e/` seed + `npm ci` |
-| `src/qa/validate.ts` | Static gate (tsc + lint + list + manifest) |
-| `src/qa/execute.ts` | Playwright runner against DEV |
-| `src/qa/metadata.ts` | `e2e/.qa/manifest.json` validation |
-| `src/orchestrator/sanitizer.ts` | Redact secrets from diff + execution logs |
+| `src/orchestrator/sanitizer.ts` | Redact secrets from execution logs → Issue |
 | `src/orchestrator/config-loader.ts` | Load `config/apps/<app>.yaml` with `${VAR}` expansion |
 | `src/server/queue.ts` | Sequential job queue |
 | `src/server/webhook.ts` | Webhook receiver |

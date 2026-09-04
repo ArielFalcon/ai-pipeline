@@ -64,17 +64,18 @@
 // port calls out to whatever backing store the host wires in); its presence here is not evidence
 // this factory holds engine policy of its own. seam-parity.contract.test.ts's (e) COMPOSITION block
 // is this file's permanent boundary-contract pin.
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { readFile } from "node:fs/promises";
 import { readdirSync, readFileSync, mkdirSync, writeFileSync, realpathSync, lstatSync } from "node:fs";
 import { spawn } from "node:child_process";
 import type { AppConfig } from "../orchestrator/config-loader";
+import { resolveValueOraclePolicy } from "../orchestrator/schemas";
 import type { AgentDeps } from "../integrations/opencode-client";
 // WS6.1 (full-flow remediation, timeouts & operational observability): the purpose-built reviewer
 // budget (6min, env-tunable via OPENCODE_REVIEWER_TIMEOUT_MS) — threaded into CompositionConfig.
 // reviewTimeoutMs so ReviewPortAdapter.review() no longer silently inherits the dispatcher's
 // ~25.5min worst-case ceiling.
-import { REVIEWER_TIMEOUT_MS } from "../integrations/opencode-client";
+import { REVIEWER_TIMEOUT_MS, EXPLORER_TIMEOUT_MS, agentTimeout } from "../integrations/opencode-client";
 // WS6.2 (full-flow remediation, timeouts & operational observability): see
 // createRewrittenEngineFactory's own header comment for why these three wrappers are composed here.
 // migration-tier-4c Slice 2: withUsageSink/withStallWatchdog/withSessionRegistration now live in
@@ -111,6 +112,7 @@ import { CodeExecutionStrategy } from "@contexts/test-execution/infrastructure/c
 import { CodeValidationStrategy } from "@contexts/test-execution/infrastructure/code-validation.strategy";
 import { StrykerMutationOracleAdapter } from "@contexts/objective-signal/infrastructure/stryker-mutation-oracle.adapter";
 import { FaultInjectionOracleAdapter } from "@contexts/objective-signal/infrastructure/fault-injection-oracle.adapter";
+import { NullValueOracleAdapter } from "@contexts/objective-signal/infrastructure/null-value-oracle.adapter";
 import { GitHubPrAdapter } from "@contexts/workspace-and-publication/infrastructure/github-pr.adapter";
 import { GitHubIssueAdapter } from "@contexts/workspace-and-publication/infrastructure/github-issue.adapter";
 import type { GitHubHttpDeps } from "@contexts/workspace-and-publication/infrastructure/github-http";
@@ -157,6 +159,7 @@ import {
 } from "@contexts/generation/infrastructure/prompt-builders/prompts";
 import { parseVerdict } from "../integrations/verdict-parse";
 import { parseReviewerVerdict, checkGeneratorVerdict, repairInstruction } from "../integrations/verdict-validate";
+import { parseExplorationBrief } from "../qa/exploration-brief";
 import { roleWindowBytes } from "@contexts/generation/infrastructure/prompt-builders/model-window-catalog";
 import type { RepairPort } from "@contexts/generation/application/generate-tests.use-case.ts";
 // migration-tier-4d Slice 1b (e2e-execution migration, the src->qa-engine migration program's
@@ -199,7 +202,7 @@ import { ensureMirror, ensureMirrorAtBranch, defaultMirrorDeps, workdirRoot, rea
 import { stageServiceContext, serviceContextDir } from "./service-context";
 import { SqliteRunHistoryAdapter } from "./run-history-sqlite-adapter";
 import { SqliteLearningRepository, type LearningStore } from "@contexts/cross-run-learning/infrastructure/sqlite-learning-repository.adapter";
-import { listLearningRules, listAllLearningRules, upsertLearningRule, incrementRuleUsage, recordRuleOutcome, updateRunOutcomeReflection, listRunOutcomes, setRuleStatusByHuman, markContextStale } from "./history";
+import { listLearningRules, listAllLearningRules, upsertLearningRule, incrementRuleUsage, recordRuleOutcome, updateRunOutcomeReflection, listRunOutcomes, setRuleStatusByHuman, markContextStale, saveScorecardEntry } from "./history";
 import { recordIncident } from "./maintainer";
 import { preventionOutcome } from "@contexts/cross-run-learning/domain/rule-fold";
 import { ReflectorPortAdapter, REFLECT_TIMEOUT_MS } from "@contexts/cross-run-learning/infrastructure/reflector-port.adapter";
@@ -210,7 +213,6 @@ import { expandEnv } from "../orchestrator/config-loader";
 // Same role→agent-name mapping the F.2 operator template uses (roleToAgentName) — the
 // AgentRuntimeAdapter needs it to resolve which of the agents container's role configs
 // (qa-generator/qa-reviewer/qa-worker/…) an AgentRole maps to.
-// CHIP: explorer misroutes to qa-generator — diverges from ROLE_TO_OPENCODE_AGENT/rolePromptName; tracked separately, out of scope
 export function roleToAgentName(role: AgentRole): string {
   const map: Record<AgentRole, string> = {
     primary: "qa-generator",
@@ -220,7 +222,7 @@ export function roleToAgentName(role: AgentRole): string {
     workerCode: "qa-worker-code",
     maintainer: "qa-maintainer",
     reflector: "qa-reflector",
-    explorer: "qa-generator",
+    explorer: "qa-explorer",
     proposer: "qa-proposer",
   };
   return map[role];
@@ -583,7 +585,20 @@ export function historyLearningStore(appName: string): LearningStore {
       // NOT re-check outcome.adjudication itself (single guard-owner, per design).
       try {
         const { rulesRetrieved, gateSignals, errorClass } = outcome;
-        if (rulesRetrieved.length === 0) return; // nothing retrieved -> nothing to fold
+        // Ola 2: persist the per-run value-oracle scorecard so the TUI/CLI flywheel reads a
+        // writer that actually runs. Independent of rule retrieval — a green run with no
+        // retrieved rules still earned (or skipped) an oracle score.
+        saveScorecardEntry({
+          runId: outcome.runId,
+          app: outcome.app,
+          sha: outcome.sha,
+          target: outcome.target,
+          valueScore: gateSignals.valueScore,
+          mutantCount: 0,
+          killedCount: 0,
+          at: outcome.at,
+        });
+        if (rulesRetrieved.length === 0) return; // nothing retrieved -> nothing to fold onto rules
         const { valueScore, coverageRatio } = gateSignals;
         const coverageMeasured = coverageRatio !== null;
         const coverageCreditConfirmed = coverageMeasured ? coverageRatio > 0 : null;
@@ -944,9 +959,15 @@ export function buildRewrittenCompositionConfig(
   // retires this adapter's own local killTree byte-copy in favor of the shared-kernel port).
   const mutationOracleDeps = { spawn, detectCodeProject, scrubEnv, processKill: new ProcessKillAdapter() };
 
-  const oracle = isCode
-    ? new StrykerMutationOracleAdapter(mutationOracleDeps)
-    : new FaultInjectionOracleAdapter(runCorruptedFaultInjection, countInjectedFaultInjectionResponses, app.dev?.baseUrl ?? "");
+  // P0-2: honor YAML qa.valueOracle (and the shadow-aware default the CLI already reports).
+  // "off" → NullValueOracleAdapter (no DEV re-run, no Stryker). "signal" → the target-specific
+  // oracle (Stryker for code, fault-injection for e2e).
+  const valueOraclePolicy = resolveValueOraclePolicy(app.qa);
+  const oracle = valueOraclePolicy === "off"
+    ? new NullValueOracleAdapter()
+    : isCode
+      ? new StrykerMutationOracleAdapter(mutationOracleDeps)
+      : new FaultInjectionOracleAdapter(runCorruptedFaultInjection, countInjectedFaultInjectionResponses, app.dev?.baseUrl ?? "");
 
   // WorkspacePort's checkout(sha) resolves the REAL per-run mirrorDir. Same-repo: the single
   // ensureMirror the legacy runPipeline's `prepare` step calls, so both engines checkout identically.
@@ -1025,6 +1046,9 @@ export function buildRewrittenCompositionConfig(
     // Derived from coveragePolicy.mode (computed once, above) — single source, see this fn's own
     // header comment near `const coveragePolicy = ...`.
     coveragePolicyMode: coveragePolicy.mode,
+    agentTimeoutMs: agentTimeout(run.mode),
+    ...(app.qa.wallClockBudgetMs !== undefined ? { wallClockBudgetMs: app.qa.wallClockBudgetMs } : {}),
+    ...(app.qa.iterationBudget !== undefined ? { iterationBudget: app.qa.iterationBudget } : {}),
     // The dynamic-diff fix (engram #939): GenerationPortAdapter/ReviewPortAdapter both prefer the
     // REAL per-run diff sourced from ChangeAnalysisPort.classify() over this static field, which is
     // deliberately left empty here — there is no per-run commit diff known at composition-build
@@ -1088,7 +1112,46 @@ export function buildRewrittenCompositionConfig(
     // three files away. wireBridges() itself skips both ports entirely on the code target
     // (isCode guard, mirroring legacy's own `!isCode` guards, pipeline.ts:1466/1643/2078), so no
     // target check is needed here.
-    groundingCollaborators: {},
+    // P0-3: when qa.explorer is true, run the read-only qa-explorer pass fail-open and feed the
+    // brief into buildContextPack. Omitted / false keeps the empty object so the adapter falls
+    // back to the real pack builder without a brief (legacy "explorer disabled" degradation).
+    groundingCollaborators: app.qa.explorer && !isCode
+      ? {
+          exploreBrief: async ({ specDir, diff, signal }) => {
+            const cwd = dirname(specDir);
+            let session: Awaited<ReturnType<typeof runtimeAdapter.openSession>> | undefined;
+            try {
+              session = await runtimeAdapter.openSession("explorer", cwd, {
+                ...(signal ? { signal } : {}),
+                timeoutMs: EXPLORER_TIMEOUT_MS,
+                descriptor: { role: "qa-explorer" },
+              });
+              const prompt = buildExplorerPrompt({
+                repo: app.repo,
+                sha: namespace,
+                diff: diff ?? "",
+                mirrorDir: cwd,
+                e2eRelDir,
+                namespace,
+                needsReview: app.qa.needsReview,
+                target,
+                mode: run.mode,
+                appName: app.name,
+                explorer: true,
+                ...(app.dev?.baseUrl ? { baseUrl: app.dev.baseUrl } : {}),
+                ...(run.guidance ? { guidance: run.guidance } : {}),
+              });
+              const { output } = await session.prompt(prompt, { textOnly: true });
+              return parseExplorationBrief(output) ?? undefined;
+            } catch (err) {
+              console.warn(`[qa] WARNING: explorer pass failed (non-blocking): ${err instanceof Error ? err.message : String(err)}`);
+              return undefined;
+            } finally {
+              await session?.dispose();
+            }
+          },
+        }
+      : {},
     reviewDomGroundingCollaborators: {},
     // CodeGraph Phase 4 (design §5.3/§6, user-confirmed ACTIVE wiring): the raw CLI client for the
     // structural blast-radius signal. Reuses this factory's own `runner` (the same sandboxed spawn

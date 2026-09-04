@@ -20,6 +20,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { getRecord, getRunOutcome, listRunOutcomes, listLearningRules, loadCurriculum } from "./server/history";
 import { loadAppConfig } from "./orchestrator/config-loader";
+import { resolveValueOraclePolicy } from "./orchestrator/schemas";
 import { RUN_MODES, RunMode, TestTarget } from "./types";
 import { runSucceeded } from "./cli-exit";
 import { renderRunReport } from "./qa/value-report";
@@ -179,7 +180,7 @@ function printRunReport(record: ReturnType<typeof getRecord> & {}, appCfg: Retur
       coveragePolicy: appCfg.qa.changeCoverage?.mode ?? "signal",
       // Resolve the oracle policy exactly as the pipeline does, so the report distinguishes a
       // genuinely-off oracle from one that was enabled but had no passing specs to score.
-      oraclePolicy: appCfg.qa.valueOracle ?? (appCfg.qa.shadow ? "off" : "signal"),
+      oraclePolicy: resolveValueOraclePolicy(appCfg.qa),
       valueScore: gs?.valueScore ?? null,
       reviewerApproved: gs?.reviewerApproved ?? null,
       reviewerRationale: gs?.reviewerRationale,

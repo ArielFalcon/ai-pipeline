@@ -135,6 +135,14 @@ export interface RunQaConfig {
   // status === "fail"`). "off" never even reaches a fail status in the legacy (decideCoverage is
   // skipped when the policy is off), but is accepted here too for completeness.
   coveragePolicyMode: "off" | "signal" | "enforce";
+  // Per-mode agent session budget (ms). 0 / omitted means WallClockBudget is derived but MUST NOT
+  // be enforced — a zero budget would exhaust on the first elapsed millisecond and abort every retry.
+  agentTimeoutMs?: number;
+  // Optional YAML override (qa.wallClockBudgetMs). When set, WallClockBudget uses it instead of
+  // cycleBudget.ceiling * agentTimeoutMs.
+  wallClockBudgetMs?: number;
+  // Optional YAML override (qa.iterationBudget) for CycleBudget.derive.
+  iterationBudget?: number;
 }
 
 export interface RunQaUseCaseDeps {
@@ -410,6 +418,19 @@ export class RunQaUseCase {
 
   async run(input: RunQaInput, signal?: AbortSignal): Promise<RunQaResult> {
     const cfg: RunQaConfig = { ...DEFAULT_CONFIG, ...this.deps.config };
+    const startedAt = Date.now();
+    const cycleBudget = CycleBudget.derive({
+      maxRetries: cfg.maxRetries,
+      ...(cfg.iterationBudget !== undefined ? { iterationBudget: cfg.iterationBudget } : {}),
+    });
+    const wallClockBudget = WallClockBudget.derive({
+      cycleBudget,
+      agentTimeoutMs: cfg.agentTimeoutMs ?? 0,
+      ...(cfg.wallClockBudgetMs !== undefined ? { wallClockBudgetMs: cfg.wallClockBudgetMs } : {}),
+    });
+    // A zero agentTimeoutMs with no YAML override MUST NOT enforce exhausted() — that budget is 0
+    // and would stop every retry on the first millisecond (the historical composition-root bug).
+    const wallClockArmed = (cfg.agentTimeoutMs ?? 0) > 0 || cfg.wallClockBudgetMs !== undefined;
 
     // Plan 7.1 (engram #913): an already-aborted signal short-circuits BEFORE the entry gate —
     // the queue cancelled this run before it ever started; there is nothing to gate/prepare/etc.
@@ -886,6 +907,9 @@ export class RunQaUseCase {
     // pipeline.ts:2265's `retries++` in the static-fix loop, and the FixLoop's own retries++ per
     // verdictual round). Declared here (not reassigned to a fresh 0 at the FixLoop section below).
     let retries = 0;
+    // Winning FixLoop execute namespace (`${runId}-rN`). Absent when the loop never ran — measure()
+    // then falls back to the composition-time namespace (ExecutionPortAdapter's own default).
+    let coverageNamespace: string | undefined;
     // post-cutover-remediation P3 (unit 4): the FixLoop's own adjudicator verdict class
     // (FixLoopResult.lastAdjudicatorVerdict), hoisted to the SAME method-level scope as `retries`
     // above — captured inside the FixLoop branch below, read at the mainline toRunOutcome call much
@@ -1312,18 +1336,15 @@ export class RunQaUseCase {
         // the failing spec files, matching the legacy's re-run-time savings on large suites. Live
         // per-case events (F1b) are threaded on every retry too, not just the initial execute.
         //
-        // NOT threaded: fixLoopInput.namespace (the aggregate's own per-attempt `retryNs =
-        // "${namespace}-r${retry+1}"`, fix-loop.aggregate.ts:357/380) — ExecutionPort.execute's
-        // namespace is STATIC, baked into the composition root's ExecutionPortAdapter constructor
-        // context (composition-root.ts's `namespace: cfg.branch`), not a per-call parameter this
-        // barrel exposes. This is a PRE-EXISTING, separate gap (FixLoopResult.coverageNamespace is
-        // not read anywhere in this use-case today either — confirmed unwired before this fix) and
-        // out of scope for the execute()-opts widening this fix makes: closing it needs a per-call
-        // namespace override added to ExecutionOpts, a distinct follow-up.
+        // Per-attempt namespace (FixLoopExecuteInput.namespace = `${runId}-r${n}`): ExecutionPortAdapter
+        // already honours ExecutionOpts.namespace as an override of the composition-time ctx.namespace
+        // (coverage-regen uses the same seam). Forwarding it here isolates each retry's Playwright
+        // test-data prefix so a retry cannot collide with its own prior attempt on apps with no delete.
         execute: async (fixLoopInput) => {
           const r = await this.deps.execution.execute(workspace.specDir, {
             ...liveExecutionOpts,
             ...(fixLoopInput.specFiles ? { specFiles: fixLoopInput.specFiles } : {}),
+            ...(fixLoopInput.namespace ? { namespace: fixLoopInput.namespace } : {}),
           });
           return { verdict: r.verdict, cases: r.cases };
         },
@@ -1339,6 +1360,9 @@ export class RunQaUseCase {
         // alongside the SAME classificationDiff/classificationIntent every other generate() call
         // site already threads.
         generate: async (fixLoopInput) => {
+          if (wallClockArmed && wallClockBudget.exhausted(Date.now() - startedAt)) {
+            return { specs: [], approved: lastGenerated.approved, note: "wall-clock budget exhausted" };
+          }
           // "Dynamic diff" fix: the FixLoop's own regenerate() call also reuses the SAME
           // classificationDiff — every generation attempt across the whole run sees the same real
           // per-run diff, never a stale/empty static fallback.
@@ -1402,8 +1426,9 @@ export class RunQaUseCase {
         // aggregate's own [SWAP] contract a real collaborator instead of the graceful no-op default.
         revalidate: (specDir) => this.deps.validation.validate(specDir),
       });
-      const cycleBudget = CycleBudget.derive({ maxRetries: cfg.maxRetries });
-      const wallClockBudget = WallClockBudget.derive({ cycleBudget, agentTimeoutMs: 0 });
+      // CycleBudget / WallClockBudget were derived at run() start (P0-5) so YAML iterationBudget /
+      // agentTimeoutMs / wallClockBudgetMs actually reach the VOs. Reused here, not re-derived with
+      // agentTimeoutMs: 0.
       // FIX D (judgment-day): mirrors src/pipeline.ts:2563-2564's keystone guard verbatim —
       // `generating && mode === "diff" && covPolicy.mode !== "off" && !triggerService`. This
       // conjunct deliberately omits `!input.triggerRepo` (unlike the measure-phase guard below,
@@ -1452,6 +1477,7 @@ export class RunQaUseCase {
       // SAME running total, never reset between them. A plain `retries = fixLoopResult.retries`
       // would silently DISCARD any repair rounds the static-fix loop already consumed above.
       retries += fixLoopResult.retries;
+      coverageNamespace = fixLoopResult.coverageNamespace;
       // post-cutover-remediation P3 (unit 4): capture the FixLoop's own adjudicator verdict class —
       // undefined when the loop never reached the adjudicate() decision point (e.g. maxRetries:0, or
       // the loop condition never engaged at all), matching lastAdjudicatorVerdictClass's own
@@ -1537,6 +1563,7 @@ export class RunQaUseCase {
         workspace.specDir,
         input.triggerRepo ? undefined : classificationDiff,
         baselineCases,
+        ...(coverageNamespace ? [{ namespace: coverageNamespace }] : []),
       );
       coverageRatio = signal.ratio;
       valueScore = signal.valueScore ?? null;

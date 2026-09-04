@@ -368,3 +368,29 @@ test("blocks(): enforce+pass -> false", () => {
 
   assert.equal(adapter.blocks("pass"), false, "a pass status must never block");
 });
+
+// P0-5: coveragePolicy.mode "off" must skip BOTH collector IO and the value oracle (YAML honesty).
+test("P0-5: measure() with policy.mode off skips collector and oracle", async () => {
+  let collectCalls = 0;
+  let oracleCalls = 0;
+  const collector = fakeCollector({ covered: [{ file: "src/checkout.ts", lines: [1, 2] }] }, () => { collectCalls++; });
+  const decide = new DecideCoverageService();
+  const oracle: ValueOraclePort = {
+    measure: async () => {
+      oracleCalls++;
+      return { valueScore: 0.9, mutantCount: 2, killedCount: 2, details: "should not run" };
+    },
+  };
+  const adapter = new ObjectiveSignalPortAdapter(
+    { collector, decide, oracle },
+    { policy: { mode: "off", minRatio: 0.7 }, repoDir: "/mirrors/org/app", assembleChangeCoverage },
+  );
+  const br = BlastRadius.of(Sha.of("abc1234"), ["src/checkout.ts"]);
+  const result = await adapter.measure(br, "/mirrors/org/app/e2e", SAMPLE_DIFF, ["a"]);
+
+  assert.equal(collectCalls, 0, "coverage.mode off must not collect coverage dumps");
+  assert.equal(oracleCalls, 0, "coverage.mode off must not run the value oracle");
+  assert.equal(result.status, "unknown");
+  assert.equal(result.ratio, null);
+  assert.equal(result.valueScore, undefined);
+});

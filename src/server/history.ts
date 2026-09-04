@@ -12,7 +12,9 @@ import { join } from "node:path";
 import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { RunRecord, RunMode, TestTarget, QaCase, RunVerdict, SpecRecord, RunOutcome, AgentActivity, PLANNER_OBJECTIVE } from "../types";
-import { applyOutcome, type LearningRule, type RuleUpsert, type Confidence, type RuleStatus } from "../qa/learning/learning-rule";
+import { applyOutcome as foldApplyOutcome } from "@contexts/cross-run-learning/domain/rule-fold";
+import type { LearningRule as FoldLearningRule } from "@contexts/cross-run-learning/application/ports/index.ts";
+import { type LearningRule, type RuleUpsert, type Confidence, type RuleStatus } from "../qa/learning/learning-rule";
 import type { ErrorClass } from "../qa/learning/taxonomy";
 import type { Curriculum } from "../qa/learning/curriculum";
 import { updateScorecard, type Scorecard, type ScorecardEntry } from "../qa/learning/oracle-types";
@@ -711,8 +713,8 @@ export function incrementRuleUsage(ruleIds: string[]): void {
 
 // Fold one objective outcome (a valueScore in [0,1]) into a rule's running statistics:
 // successRate (running mean — NOT an overwrite), outcomeCount, confidence, and status
-// (promotion/demotion with hysteresis). The pure governance lives in applyOutcome; this is
-// only the read-modify-write boundary. No-op when the rule no longer exists.
+// (promotion/demotion with hysteresis). The pure governance lives in qa-engine
+// rule-fold.ts applyOutcome (the production fold); this is only the read-modify-write boundary.
 //
 // Phase 7 coverage anchor: `coverageCreditConfirmed` is forwarded to applyOutcome to gate the
 // candidate → active promotion step. Pass true when the run's change-coverage confirmed that
@@ -730,7 +732,15 @@ export function recordRuleOutcome(ruleId: string, score: number, coverageCreditC
   ensureDb();
   const row = db.prepare("SELECT * FROM learning_rules WHERE id = ?").get(ruleId) as Record<string, unknown> | undefined;
   if (!row) return;
-  const updated = applyOutcome(rowToRule(row), score, coverageCreditConfirmed, isOracleScore);
+  // Shell LearningRule still includes retired "pending"; the fold's RuleStatus does not.
+  // nextStatus already self-heals pending → candidate via a string check — this is a boundary
+  // cast, not a second fold.
+  const updated = foldApplyOutcome(
+    rowToRule(row) as FoldLearningRule,
+    score,
+    coverageCreditConfirmed,
+    isOracleScore,
+  ) as LearningRule;
   db.prepare(
     "UPDATE learning_rules SET success_rate = ?, outcome_count = ?, oracle_outcome_count = ?, confidence = ?, status = ?, last_verified = ? WHERE id = ?",
   ).run(updated.successRate, updated.outcomeCount, updated.oracleOutcomeCount, updated.confidence, updated.status, new Date().toISOString(), ruleId);

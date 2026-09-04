@@ -202,11 +202,12 @@ import { ensureMirror, ensureMirrorAtBranch, defaultMirrorDeps, workdirRoot, rea
 import { stageServiceContext, serviceContextDir } from "./service-context";
 import { SqliteRunHistoryAdapter } from "./run-history-sqlite-adapter";
 import { SqliteLearningRepository, type LearningStore } from "@contexts/cross-run-learning/infrastructure/sqlite-learning-repository.adapter";
-import { listLearningRules, listAllLearningRules, upsertLearningRule, incrementRuleUsage, recordRuleOutcome, updateRunOutcomeReflection, listRunOutcomes, setRuleStatusByHuman, markContextStale, saveScorecardEntry } from "./history";
+import { listLearningRules, listAllLearningRules, upsertLearningRule, incrementRuleUsage, recordRuleOutcome, updateRunOutcomeReflection, listRunOutcomes, setRuleStatusByHuman, markContextStale, saveScorecardEntry, loadCurriculum, saveCurriculum } from "./history";
 import { recordIncident } from "./maintainer";
 import { preventionOutcome } from "@contexts/cross-run-learning/domain/rule-fold";
 import { ReflectorPortAdapter, REFLECT_TIMEOUT_MS } from "@contexts/cross-run-learning/infrastructure/reflector-port.adapter";
 import { ProcessAuditPortAdapter } from "@contexts/cross-run-learning/infrastructure/process-audit-port.adapter";
+import { CurriculumPortAdapter } from "@contexts/cross-run-learning/infrastructure/curriculum-port.adapter";
 import { YamlBoundaryProfileAdapter } from "@contexts/service-topology/infrastructure/yaml-boundary-profile.adapter";
 import { expandEnv } from "../orchestrator/config-loader";
 
@@ -1422,6 +1423,12 @@ export function buildRewrittenCompositionConfig(
         }
       },
     }),
+    // CurriculumPort — the per-app scenario-archetype prior. Constructed HERE, not in the composition
+    // root, for the same reason as reflectorPort/processAudit: its store is history.ts's
+    // loadCurriculum/saveCurriculum, a src-only collaborator qa-engine may never import. Wired
+    // UNCONDITIONALLY (no config flag): the port is measure-and-rank only — it never gates a verdict,
+    // a publish decision or a coverage decision, so there is no risk surface a flag would protect.
+    curriculumPort: new CurriculumPortAdapter(app.name, loadCurriculum, saveCurriculum),
     ...(observer ? { observer } : {}),
   };
 }

@@ -1521,6 +1521,12 @@ export class RunQaUseCase {
     // re-implemented.
     let blocksPublish = false;
     let coverageRatio: number | null = null;
+    // DecideCoverageService's own status for this run, hoisted to run scope for the curriculum fold
+    // at the end of the method. RunOutcome persists only the RATIO, and re-deriving pass/fail from
+    // ratio-vs-minRatio at the fold site would create a second source of truth for a decision
+    // decide-coverage.service.ts already owns. `undefined` means measure() never ran (non-diff mode,
+    // coverage policy off) — distinct from a measured "unknown", and read as inconclusive either way.
+    let coverageStatus: "pass" | "fail" | "unknown" | undefined;
     // FIX 3 (judgment-day D.7): the value-oracle (mutation-testing) result the legacy persists
     // alongside coverageRatio (src/pipeline.ts:3267's persistOutcome(..., valueScore, ...),
     // src/qa/learning/labeler.ts's LabelerInput.valueScore) — previously hardcoded null in
@@ -1582,6 +1588,7 @@ export class RunQaUseCase {
         ...(coverageNamespace ? [{ namespace: coverageNamespace }] : []),
       );
       coverageRatio = signal.ratio;
+      coverageStatus = signal.status;
       valueScore = signal.valueScore ?? null;
       // FIX B (judgment-day, HIGH): blocksPublish must respect the policy mode — "unknown"/"pass"
       // never block either side of the mode, and "fail" blocks ONLY in "enforce" (src/qa/
@@ -1647,6 +1654,9 @@ export class RunQaUseCase {
               // Second measure wins — comparator-visible coverageRatio now reflects the regen's own
               // signal, never a stale first-run value.
               coverageRatio = signal2.ratio;
+              // The regen's own measurement is already the ONLY input to blocksPublish, so the
+              // curriculum must read that same final status and never the superseded first one.
+              coverageStatus = signal2.status;
               blocksPublish = this.deps.objectiveSignal.blocks(signal2.status);
             }
           }
@@ -2112,6 +2122,27 @@ export class RunQaUseCase {
       // a test that correctly caught a real bug.
       if (shouldDistillLearning(cfg.isCode, decision.verdict, mainlineOutcome.adjudication?.class)) {
         await this.deps.learning.fold(mainlineOutcome);
+      }
+
+      // Phase: curriculum fold — off-path, fault-isolated inside the adapter (no try/catch here,
+      // same trust the reflector/processAudit call sites extend to their adapters).
+      //
+      // DELIBERATELY NOT gated on shouldDistillLearning. That gate exists to stop the LEARNING
+      // ledger from authoring a rule that weakens a test which correctly caught a real bug
+      // (app_defect suppresses the fold). The curriculum's question is the opposite one — WHICH
+      // SCENARIO SHAPE found that bug — so app_defect is its single strongest positive signal.
+      // Gating the two together would make the curriculum blind to exactly the runs it exists for.
+      //
+      // Only the MAINLINE exit folds. The static-gate `invalid` and health-preflight `infra-error`
+      // terminals never executed a suite, so they carry no readable evidence about an archetype;
+      // recording a miss there would punish `invalid-input` for a tsc error.
+      if (offeredArchetypes.length > 0) {
+        await this.deps.curriculum?.fold({
+          offered: offeredArchetypes,
+          verdict: decision.verdict,
+          ...(mainlineOutcome.adjudication?.class !== undefined ? { adjudicationClass: mainlineOutcome.adjudication.class } : {}),
+          ...(coverageStatus !== undefined ? { coverageStatus } : {}),
+        });
       }
 
       // reflector-rewire (design ADR-1): the reflect gate ANDs further conditions on top of the SAME

@@ -28,7 +28,7 @@
 import { join } from "node:path";
 import type { Sha } from "@kernel/sha.ts";
 import type { RunMode, TestTarget } from "@kernel/run-mode.ts";
-import type { RunPipelinePort, ObserverPort, RunHistoryPort, ConfinementPort, MirrorGcPort } from "../application/ports/index.ts";
+import type { RunPipelinePort, ObserverPort, RunHistoryPort, ConfinementPort, MirrorGcPort, CurriculumPort } from "../application/ports/index.ts";
 import { RewrittenOrchestratorAdapter, type RewrittenOrchestratorAdapterDeps } from "../infrastructure/rewritten-orchestrator.adapter.ts";
 import { selectEngine } from "./pipeline-engine-flag.ts";
 
@@ -353,6 +353,15 @@ export interface CompositionConfig {
   // Threaded straight through to RunQaUseCaseDeps.processAudit below — no default, no wrapping (same
   // posture as reflectorPort/confinement).
   processAudit?: ProcessAuditPort;
+
+  // CurriculumPort collaborator (curriculum-wiring, D6) — [SWAP]-optional, mirrors processAudit's
+  // own "absent -> no-op" precedent immediately above. Unlike learningRepo, there is no stub default
+  // constructed here: the production factory (src/server/rewritten-engine-factory.ts, the ONE module
+  // permitted to import both qa-engine's aliases AND root src/) is the ONLY place that can construct
+  // a real CurriculumPortAdapter (its store is history.ts's loadCurriculum/saveCurriculum, a
+  // src-only collaborator this composition root must never import). Threaded straight through to
+  // RunQaUseCaseDeps.curriculum below — no default, no wrapping (same posture as processAudit).
+  curriculumPort?: CurriculumPort;
 
   // WorkspacePort collaborator — resolves a Sha to its working-copy mirrorDir. Cross-repo routing
   // stays OPAQUE inside this fn (the bridge's own documented scope for Plan 6).
@@ -743,6 +752,10 @@ function wireBridges(cfg: CompositionConfig): Omit<RewrittenOrchestratorAdapterD
     // confinement's own conditional-spread precedent immediately above — absent cfg.processAudit
     // means RunQaUseCaseDeps.processAudit is omitted entirely (never a fabricated no-op stub).
     ...(cfg.processAudit ? { processAudit: cfg.processAudit } : {}),
+    // curriculum-wiring (D6): mirrors processAudit's own conditional-spread precedent immediately
+    // above — absent cfg.curriculumPort means RunQaUseCaseDeps.curriculum is omitted entirely (never
+    // a fabricated no-op stub), so select() returns nothing and the fold never fires.
+    ...(cfg.curriculumPort ? { curriculum: cfg.curriculumPort } : {}),
     config: {
       needsReview: cfg.needsReview,
       shadow: cfg.shadow,

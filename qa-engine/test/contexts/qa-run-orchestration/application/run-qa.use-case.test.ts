@@ -28,6 +28,7 @@ import type {
   ConfinementPort,
   MirrorGcPort,
   CurriculumPort,
+  CurriculumFoldInput,
 } from "@contexts/qa-run-orchestration/application/ports/index.ts";
 // reflector-rewire (design ADR-1/ADR-4/ADR-5): ReflectorPort/ReflectionInput are declared in
 // cross-run-learning (co-located with StructuredReflection/LearningRepositoryPort), NOT in this
@@ -6037,4 +6038,69 @@ test("curriculum: select() receives the CLASSIFIED diff and changed files, not a
   assert.equal(calls.length, 1);
   assert.equal(calls[0]?.diff, "+const res = await fetch(url);");
   assert.deepEqual(calls[0]?.changedFiles, ["src/api.ts"]);
+});
+
+// ── Curriculum fold (D1, the evidence ladder): CurriculumPort.fold() after the learning fold ─────
+// The fold credits EXACTLY the archetypes select() offered, labelled with evidence the run has
+// ALREADY computed deterministically — DecideCoverageService's own coverage status and the
+// adjudicator's own class. Never a green verdict alone, never an LLM judgement.
+
+test("curriculum: the fold carries the run's coverage status", async () => {
+  const folds: CurriculumFoldInput[] = [];
+  const { ports } = stubPorts({
+    execute: async () => ({ verdict: "pass", cases: [{ name: "t", status: "pass" }], logs: "" }),
+    measure: async () => ({ status: "pass", ratio: 0.9 }),
+    blocks: () => false,
+    curriculum: {
+      select: async () => [
+        { id: "ex-form-happy-path", name: "n", template: "t", archetype: "happy-path", proven: false, promotionCount: 0 },
+      ],
+      fold: async (i) => { folds.push(i); },
+    },
+  });
+
+  await new RunQaUseCase(ports).run({ ...baseInput, runId: "curriculum-fold-covered" });
+
+  assert.equal(folds.length, 1);
+  assert.deepEqual(folds[0]!.offered, ["happy-path"]);
+  assert.equal(folds[0]!.verdict, "pass");
+  assert.equal(folds[0]!.coverageStatus, "pass");
+});
+
+test("curriculum: nothing offered, nothing folded — the curriculum only ever credits what the prompt carried", async () => {
+  const folds: CurriculumFoldInput[] = [];
+  const { ports } = stubPorts({
+    curriculum: { select: async () => [], fold: async (i) => { folds.push(i); } },
+  });
+
+  await new RunQaUseCase(ports).run({ ...baseInput, runId: "curriculum-fold-nothing-offered" });
+
+  assert.equal(folds.length, 0);
+});
+
+test("curriculum: the fold is NOT gated on shouldDistillLearning — an app_defect run suppresses the learning fold but MUST credit the curriculum", async () => {
+  const folds: CurriculumFoldInput[] = [];
+  // Drives adjudicate()'s Rule 2.5 (an attributed 5xx) deterministically: a failure detail that is
+  // NOT a Playwright launcher signature (so Rule 1 cannot fire), the stubbed deploy gate serving
+  // (so devHealthy is true and Rule 2 cannot fire), the e2e target (isCode false), and one failed
+  // case carrying httpStatus 500 -> app_defect/high/break-issue at round 0 of the FixLoop.
+  const { ports, foldedOutcomes } = stubPorts({
+    execute: async () => ({
+      verdict: "fail",
+      cases: [{ name: "t", status: "fail", detail: "expected 3 received 4", file: "t.spec.ts", httpStatus: 500 }],
+      logs: "",
+    }),
+    curriculum: {
+      select: async () => [
+        { id: "ex-api-error-handling", name: "n", template: "t", archetype: "network-error", proven: false, promotionCount: 0 },
+      ],
+      fold: async (i) => { folds.push(i); },
+    },
+  });
+
+  await new RunQaUseCase(ports).run({ ...baseInput, runId: "curriculum-fold-app-defect" });
+
+  assert.equal(foldedOutcomes.length, 0, "app_defect must suppress the learning fold");
+  assert.equal(folds.length, 1, "app_defect must still credit the curriculum");
+  assert.equal(folds[0]!.adjudicationClass, "app_defect");
 });

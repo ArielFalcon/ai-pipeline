@@ -75,6 +75,16 @@ test("buildRewrittenCompositionConfig maps an e2e AppConfig into a complete Comp
   assert.ok(config.processAudit, "sdd/migration-remediation Slice 5: ProcessAuditPort collaborator must be wired");
 });
 
+// ── Curriculum wiring: the per-app scenario-archetype prior, backed by history.ts's store ────────
+// Wired UNCONDITIONALLY (no config flag): the port is measure-and-rank only — it never gates a
+// verdict, a publish decision or a coverage decision, so there is no risk surface a flag would
+// protect. Without this wiring loadCurriculum returns null forever, which is exactly the dead-module
+// state this integration exists to end.
+test("buildRewrittenCompositionConfig wires a CurriculumPort backed by the history store", () => {
+  const config = buildRewrittenCompositionConfig(cfg("curriculum-app"), { getAgentDeps: stubAgentDeps }, "qa-bot-abc1234-run1", { mode: "diff" });
+  assert.ok(config.curriculumPort, "curriculumPort must be wired unconditionally");
+});
+
 // ── follow-up #27: bounded contract-repair (RepairPort) wired into the rewritten production path ──
 // Before this fix, GenerateTestsUseCase.GenerationPorts.repair was constructed nowhere in this
 // factory — the generator/reviewer contract-repair branches (generate-tests.use-case.ts's own

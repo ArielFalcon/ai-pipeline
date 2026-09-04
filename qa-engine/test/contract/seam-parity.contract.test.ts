@@ -268,6 +268,12 @@ describe("seam-parity: COMPOSITION (CompositionConfig vs buildRewrittenCompositi
     // UNCONDITIONALLY (fail-open fault isolation, not app-config gated), the SAME "IS supplied"
     // precedent confinement/processAudit establish immediately above. Asserted below as a present case.
     mirrorGc: "IS supplied (MirrorGcAdapter wrapping realGit's local `git gc --auto --quiet`) — asserted below as a present case.",
+    // curriculum-wiring Task 5: IS supplied (a CurriculumPortAdapter over history.ts's
+    // loadCurriculum/saveCurriculum) — wired UNCONDITIONALLY (measure-and-rank only: it never gates
+    // a verdict, a publish decision or a coverage decision, so there is no risk surface a config
+    // flag would protect), the SAME "IS supplied" precedent processAudit/mirrorGc establish
+    // immediately above. Asserted below as a present case.
+    curriculumPort: "IS supplied (CurriculumPortAdapter over history.ts's loadCurriculum/saveCurriculum) — asserted below as a present case.",
   };
 
   function fakeAppConfig(overrides: Partial<AppConfig> = {}): AppConfig {
@@ -343,6 +349,11 @@ describe("seam-parity: COMPOSITION (CompositionConfig vs buildRewrittenCompositi
     // (fail-open fault isolation, not app-config gated) — the SAME "IS supplied" assertion pattern
     // as confinement/processAudit immediately above.
     assert.notEqual(cfg.mirrorGc, undefined, `mirrorGc (mirror-lifecycle wiring, D-B) dropped at ${dyingLayer}`);
+    // curriculum-wiring Task 5: curriculumPort must be wired unconditionally — the SAME "IS
+    // supplied" assertion pattern as processAudit/mirrorGc immediately above. A dropped port here
+    // is silent by construction (the curriculum simply stays empty forever), which is why this
+    // present-case assertion is the gate rather than a runtime failure.
+    assert.notEqual(cfg.curriculumPort, undefined, `curriculumPort (curriculum wiring, D6) dropped at ${dyingLayer}`);
     // W5 fix (seam-parity FIXME, flipped): readSpecSource IS wired now — assert it's a real file-read
     // collaborator, not just a truthy stub, by reading this very test file back through it.
     assert.equal(typeof cfg.readSpecSource, "function", `readSpecSource dropped at ${dyingLayer} (Lever-2 selector-contradiction check starves without it)`);

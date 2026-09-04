@@ -65,7 +65,10 @@ func TestIntelligenceCurriculumDistinguishesNoEvidenceFromZeroRate(t *testing.T)
 		},
 	}
 	out := m.body()
-	for _, want := range []string{"happy-path 3/4", "boundary-value 0/5", "network-error —"} {
+	// The proven/unproven glyph is asserted together with the rate: a chip that carried the right
+	// rate under the wrong glyph would tell the operator the opposite of the truth about whether the
+	// archetype ever caught a real defect.
+	for _, want := range []string{"✓ happy-path 3/4", "· boundary-value 0/5", "· network-error —"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("curriculum chip missing %q:\n%s", want, out)
 		}

@@ -503,8 +503,15 @@ export const CurriculumViewSchema = z.object({
   archetypes: z.array(
     z.object({
       archetype: z.string(),
+      // Proven STRICTLY by the adjudicator's app_defect verdict — never by coverage.
       caughtRealBug: z.boolean(),
       promotionCount: z.number().int().nonnegative(),
+      // The evidence ladder's second tier: runs in which this archetype was offered to the generator
+      // AND the run produced a determinable objective signal, and how many of those earned credit.
+      // The operator reads credited/evaluated as the archetype's hit rate for this app; evaluated 0
+      // means "never tried", which every renderer must show as such and never as a 0/0 rate.
+      evaluated: z.number().int().nonnegative(),
+      credited: z.number().int().nonnegative(),
     }),
   ),
 });

@@ -258,12 +258,15 @@ function showLearning(app: string): void {
   } else {
     const proven = curriculum.archetypes.filter((a) => a.caughtRealBug);
     console.log(`  ${proven.length}/${curriculum.archetypes.length} archetypes proven by real bugs:`);
-    for (const a of proven) {
-      console.log(`    ✓ ${a.archetype} (promoted ${a.promotionCount}x, first: ${a.firstCaughtAt?.slice(0, 10) ?? "?"})`);
-    }
-    const unproven = curriculum.archetypes.filter((a) => !a.caughtRealBug);
-    if (unproven.length > 0) {
-      console.log(`  ${unproven.length} unproven: ${unproven.map((a) => a.archetype).join(", ")}`);
+    for (const a of curriculum.archetypes) {
+      // "covered" is the credited/evaluated rate: of the runs that offered this archetype AND
+      // produced a determinable coverage signal, how many actually covered the change. evaluated 0
+      // means never offered or never determinable — it is stated as absent evidence, never as the
+      // rate 0/0, which would read as a measured failure the system never observed.
+      const rate = a.evaluated > 0 ? `${a.credited}/${a.evaluated} covered` : "no evidence yet";
+      const mark = a.caughtRealBug ? `PROVEN (${a.promotionCount} ${a.promotionCount === 1 ? "bug" : "bugs"})` : "unproven";
+      const since = a.firstCaughtAt ? `  first ${a.firstCaughtAt.slice(0, 10)}` : "";
+      console.log(`    ${a.archetype.padEnd(26)} ${mark.padEnd(20)} ${rate}${since}`);
     }
     console.log("");
   }

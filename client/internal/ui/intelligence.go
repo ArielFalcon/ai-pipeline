@@ -191,15 +191,30 @@ func (m intelligenceModel) body() string {
 		b.WriteString(labelRule(w, "curriculum", hintStyle.Render(fmt.Sprintf("%d/%d proven", proven, len(v.Curriculum.Archetypes)))) + "\n")
 		var parts []string
 		for _, a := range v.Curriculum.Archetypes {
+			// Each chip carries the archetype's credited/evaluated hit rate — the tier below
+			// caughtRealBug that actually moves. Evaluated == 0 means it was never offered or never
+			// produced a determinable signal, so it takes the same "—" no-data mark fmtScore uses
+			// rather than the fabricated rate "0/0", which would read as a demonstrated failure.
+			chip := a.Archetype + " " + fmtArchetypeRate(a.Credited, a.Evaluated)
 			if a.CaughtRealBug {
-				parts = append(parts, okStyle.Render("✓ "+a.Archetype))
+				parts = append(parts, okStyle.Render("✓ "+chip))
 			} else {
-				parts = append(parts, hintStyle.Render("· "+a.Archetype))
+				parts = append(parts, hintStyle.Render("· "+chip))
 			}
 		}
 		b.WriteString("  " + wrapJoin(parts, hintStyle.Render("   "), w-2))
 	}
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// fmtArchetypeRate renders an archetype's change-coverage credit as credited/evaluated, and an
+// unevaluated archetype as "—" — never as a rate, because 0/0 states a measured failure that never
+// happened.
+func fmtArchetypeRate(credited, evaluated int) string {
+	if evaluated <= 0 {
+		return "—"
+	}
+	return fmt.Sprintf("%d/%d", credited, evaluated)
 }
 
 func fmtScore(s *float32) string {

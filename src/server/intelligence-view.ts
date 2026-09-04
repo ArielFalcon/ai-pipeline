@@ -46,6 +46,10 @@ export function toIntelligenceView(
         archetype: a.archetype,
         caughtRealBug: a.caughtRealBug,
         promotionCount: a.promotionCount,
+        // Carried verbatim, zeros included: "never evaluated" is a real state the renderers must
+        // distinguish from a measured zero rate, so the projection invents no sentinel for it.
+        evaluated: a.evaluated,
+        credited: a.credited,
       })),
     },
   };

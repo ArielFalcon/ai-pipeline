@@ -1182,6 +1182,8 @@ type CurriculumView struct {
 	Archetypes []struct {
 		Archetype      string `json:"archetype"`
 		CaughtRealBug  bool   `json:"caughtRealBug"`
+		Credited       int    `json:"credited"`
+		Evaluated      int    `json:"evaluated"`
 		PromotionCount int    `json:"promotionCount"`
 	} `json:"archetypes"`
 	UpdatedAt string `json:"updatedAt"`

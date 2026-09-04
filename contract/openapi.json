@@ -2963,12 +2963,24 @@
                   "type": "integer",
                   "minimum": 0,
                   "maximum": 9007199254740991
+                },
+                "evaluated": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "credited": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
                 }
               },
               "required": [
                 "archetype",
                 "caughtRealBug",
-                "promotionCount"
+                "promotionCount",
+                "evaluated",
+                "credited"
               ],
               "additionalProperties": false
             }

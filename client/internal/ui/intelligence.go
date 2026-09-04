@@ -145,15 +145,11 @@ func (m intelligenceModel) body() string {
 	if len(v.Rules) == 0 {
 		b.WriteString("  " + hintStyle.Render("no rules learned yet — the ledger fills as runs are reflected on") + "\n")
 	} else {
-		for _, r := range v.Rules {
-			glyph, gc := ruleStatusGlyph(string(r.Status))
-			rate := "—"
-			if r.SuccessRate != nil {
-				rate = fmt.Sprintf("%.0f%%", float64(*r.SuccessRate)*100)
+		for i, r := range v.Rules {
+			if i > 0 {
+				b.WriteString("\n")
 			}
-			left := renderSegs("", sg(glyph+" ", gc)) + labelStyle.Render(padRight(r.ErrorClass, 22)) + " " + hintStyle.Render(truncate(r.Trigger, max(8, w-52)))
-			right := confidenceMeter(string(r.Confidence)) + "  " + hintStyle.Render(fmt.Sprintf("used %d · %s", r.UsageCount, rate))
-			b.WriteString(spread(w, left, right) + "\n")
+			b.WriteString(renderLearningRule(r, w))
 		}
 	}
 	b.WriteString("\n")
@@ -215,6 +211,53 @@ func fmtArchetypeRate(credited, evaluated int) string {
 		return "—"
 	}
 	return fmt.Sprintf("%d/%d", credited, evaluated)
+}
+
+// renderLearningRule paints one ledger entry as a block the operator can read: status,
+// class, evidence, the full trigger (when it applies), and the action (what to do). Trigger
+// and action wrap; they are never ellipsis-truncated — a truncated trigger is not a trigger.
+func renderLearningRule(r contract.LearningRuleView, width int) string {
+	glyph, gc := ruleStatusGlyph(string(r.Status))
+	rate := "—"
+	if r.SuccessRate != nil {
+		rate = fmt.Sprintf("%.0f%%", float64(*r.SuccessRate)*100)
+	}
+	left := renderSegs("", sg(glyph+" ", gc)) +
+		labelStyle.Render(r.ErrorClass) + "  " +
+		hintStyle.Render(string(r.Status))
+	right := confidenceMeter(string(r.Confidence)) + "  " +
+		hintStyle.Render(fmt.Sprintf("used %d · %s · %s", r.UsageCount, rate, pluralize(r.OutcomeCount, "outcome", "outcomes")))
+
+	var b strings.Builder
+	if lipgloss.Width(left)+1+lipgloss.Width(right) > width {
+		b.WriteString(left + "\n")
+		b.WriteString(right + "\n")
+	} else {
+		b.WriteString(spread(width, left, right) + "\n")
+	}
+	appendWrapped(&b, "  ", "  ", r.Trigger, width, hintStyle)
+	if strings.TrimSpace(r.Action) != "" {
+		appendWrapped(&b, "  → ", "    ", r.Action, width, labelStyle)
+	}
+	return b.String()
+}
+
+func appendWrapped(b *strings.Builder, firstIndent, restIndent, text string, width int, style lipgloss.Style) {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return
+	}
+	wrapW := width - lipgloss.Width(firstIndent)
+	if wrapW < 8 {
+		wrapW = 8
+	}
+	for i, line := range wrapText(text, wrapW) {
+		indent := firstIndent
+		if i > 0 {
+			indent = restIndent
+		}
+		b.WriteString(indent + style.Render(line) + "\n")
+	}
 }
 
 func fmtScore(s *float32) string {

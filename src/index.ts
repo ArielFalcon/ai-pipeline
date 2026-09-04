@@ -529,7 +529,9 @@ const apiDeps: ApiDeps = {
   getRecord,
   listRecords,
   currentRun,
-  intelligence: (app) => toIntelligenceView(app, listLearningRules(app), loadScorecard(app), loadCurriculum(app)),
+  // Same retrieve cap the engine injects into generation (listLearningRules(app, 200)) so the
+  // operator ledger is the live set, not a 20-row preview that silently drops the rest.
+  intelligence: (app) => toIntelligenceView(app, listLearningRules(app, 200), loadScorecard(app), loadCurriculum(app)),
   signals: () => toSignalsView(listAppConfigs().map((a) => ({ scorecard: loadScorecard(a.name), runs: listRecords(a.name, 50), outcomes: listRunOutcomes(a.name, 50) }))),
   // Each handler builds its own TrendsView via buildTrends (one SQLite read per request); report
   // then feeds that view to toReportView. buildTrends is the single home for the read + the 100

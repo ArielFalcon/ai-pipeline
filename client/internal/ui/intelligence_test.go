@@ -7,7 +7,55 @@ import (
 	"github.com/ArielFalcon/panchito/internal/api"
 	"github.com/ArielFalcon/panchito/internal/contract"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 )
+
+// visibleText strips ANSI and collapses whitespace so wrap-aware renders can be
+// asserted as the operator-visible sentence, not as a particular line break.
+func visibleText(s string) string {
+	return strings.Join(strings.Fields(ansi.Strip(s)), " ")
+}
+
+// A rule's action is the learned advice. Truncating the trigger onto one line and dropping
+// the action made the Intelligence screen a status strip, not a ledger the operator can read.
+func TestIntelligenceBodyRendersRuleTriggerActionAndOutcomes(t *testing.T) {
+	sr := float32(0.6)
+	m := newIntelligenceModel(api.New("http://x", ""), "jhipster-store")
+	m.loading = false
+	m.width = 72
+	m.view = &contract.IntelligenceView{
+		App: "jhipster-store",
+		Rules: []contract.LearningRuleView{
+			{
+				Trigger:      "Applies when the spec locates a submit button by its visible English label",
+				Action:       "prefer getByTestId or data-cy over getByText so i18n cannot break the locator",
+				ErrorClass:   "E-FRAGILE-SELECTOR",
+				Confidence:   "low",
+				UsageCount:   4,
+				OutcomeCount: 2,
+				SuccessRate:  &sr,
+				Status:       "candidate",
+			},
+		},
+	}
+	out := m.body()
+	got := visibleText(out)
+	for _, want := range []string{
+		"E-FRAGILE-SELECTOR",
+		"Applies when the spec locates a submit button by its visible English label",
+		"prefer getByTestId or data-cy over getByText so i18n cannot break the locator",
+		"used 4",
+		"2 outcomes",
+		"candidate",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("rule ledger missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(got, "visible English…") || strings.Contains(got, "visible English label…") {
+		t.Fatalf("trigger must not be ellipsis-truncated; wrap instead:\n%s", out)
+	}
+}
 
 func TestIntelligenceBodyRendersRulesAndProvenance(t *testing.T) {
 	sr := float32(0.86)
@@ -34,7 +82,7 @@ func TestIntelligenceBodyRendersRulesAndProvenance(t *testing.T) {
 		},
 	}
 	out := m.body()
-	for _, want := range []string{"RULES", "E-SELECTOR-FRAGILE", "used 22", "ORACLE", "not measured", "CURRICULUM", "happy-path", "1/2 proven"} {
+	for _, want := range []string{"RULES", "E-SELECTOR-FRAGILE", "fragile selector", "scope to a test id", "used 22", "3 outcomes", "ORACLE", "not measured", "CURRICULUM", "happy-path", "1/2 proven"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("intelligence body missing %q:\n%s", want, out)
 		}

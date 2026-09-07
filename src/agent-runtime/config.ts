@@ -24,13 +24,13 @@ export interface PublicAgentConfig {
 const DEFAULT_MODELS: Record<AgentProvider, Record<keyof AgentRuntimeConfig["assignments"], string>> = {
   opencode: {
     // MUST match opencode/opencode.json's qa-generator model (the primary that actually runs).
-    primary: "opencode-go/deepseek-v4-pro",
+    primary: "opencode-go/qwen3.7-plus",
     // MUST match opencode/opencode.json's qa-reviewer model (the file that actually runs the
     // reviewer on the e2e path) AND differ from `primary` — two different models guarantee
     // independent judgment. A guard test (model-config.test.ts) asserts both, so this can
     // never silently drift out of the catalog again (which made applyConfig throw).
     reviewer: "opencode-go/minimax-m3",
-    chat: "opencode-go/deepseek-v4-flash",
+    chat: "opencode-go/qwen3.8-flash",
   },
   codex: {
     primary: "gpt-5.4",

@@ -1,4 +1,4 @@
-module github.com/ArielFalcon/panchito
+module github.com/ArielFalcon/qayaba
 
 go 1.26
 

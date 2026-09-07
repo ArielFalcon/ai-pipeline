@@ -7,7 +7,7 @@
 // scrub-env.ts's own body); a default parameter value of `process.env` would be exactly that, even
 // though it is never evaluated once every caller passes `env` explicitly. The CODE_SANDBOX* env
 // read now happens in src/server/rewritten-engine-factory.ts (the composition-root shell caller)
-// exactly like PANCHITO_ROOT/GITHUB_TOKEN are read there — `resolveSandbox` was already
+// exactly like QAYABA_ROOT/GITHUB_TOKEN are read there — `resolveSandbox` was already
 // parameterized to accept `env`; only the escape-hatch default is removed.
 //
 // scrubEnv() removes SECRETS FROM THE ENVIRONMENT, but the watched repo's install/test/coverage

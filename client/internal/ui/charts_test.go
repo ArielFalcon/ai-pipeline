@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ArielFalcon/panchito/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/contract"
 )
 
 func f32(v float32) *float32 { return &v }

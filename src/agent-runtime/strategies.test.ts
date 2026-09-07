@@ -278,7 +278,7 @@ test("SupervisorExecTransport reports needs_config without a Codex key and reads
 test("codexExecEnv passes only Codex/runtime-safe env vars to the headless agent", () => {
   const env = codexExecEnv({
     PATH: "/bin",
-    HOME: "/home/panchito",
+    HOME: "/home/qayaba",
     GITHUB_TOKEN: "ghp_secret",
     WEBHOOK_SECRET: "webhook-secret",
     QA_API_TOKEN: "qa-secret",
@@ -293,7 +293,7 @@ test("codexExecEnv passes only Codex/runtime-safe env vars to the headless agent
   });
 
   assert.equal(env.PATH, "/bin");
-  assert.equal(env.HOME, "/home/panchito");
+  assert.equal(env.HOME, "/home/qayaba");
   assert.equal(env.CODEX_API_KEY, "codex-secret");
   assert.equal(env.OPENAI_API_KEY, "openai-secret");
   assert.equal(env.DEV_TEST_USER, "tester");

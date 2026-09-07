@@ -3,8 +3,8 @@ package ui
 import (
 	"testing"
 
-	"github.com/ArielFalcon/panchito/internal/api"
-	"github.com/ArielFalcon/panchito/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/api"
+	"github.com/ArielFalcon/qayaba/internal/contract"
 )
 
 // The stop-ack handler must follow the same nil-client discipline as every other root poll

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ArielFalcon/panchito/internal/api"
-	"github.com/ArielFalcon/panchito/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/api"
+	"github.com/ArielFalcon/qayaba/internal/contract"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -75,7 +75,7 @@ func TestHealthDots(t *testing.T) {
 
 func TestStatusBarShowsBrandAndState(t *testing.T) {
 	out := statusBar(90, "v9.9.9", systemState{loaded: true}, time.Date(2026, 6, 13, 14, 32, 0, 0, time.UTC))
-	for _, want := range []string{"panchito", "v9.9.9", "idle", "14:32"} {
+	for _, want := range []string{"qayaba", "v9.9.9", "idle", "14:32"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("statusBar missing %q:\n%s", want, out)
 		}

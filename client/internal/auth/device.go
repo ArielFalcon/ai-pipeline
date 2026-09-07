@@ -6,7 +6,7 @@
 // never stored long-term by the client (the session JWT is).
 //
 // The client_id is the orchestrator team's registered OAuth App, baked in at build time
-// (-ldflags) with a PANCHITO_GITHUB_CLIENT_ID env override for development. No client secret
+// (-ldflags) with a QAYABA_GITHUB_CLIENT_ID env override for development. No client secret
 // is needed or used — the device flow is designed for public clients that cannot keep one.
 package auth
 
@@ -37,7 +37,7 @@ const defaultBaseURL = "https://github.com"
 // the server), then the build-time baked value (offline/air-gapped fallback). "" means GitHub
 // login is not available from any source.
 func ResolveClientID(advertised string) string {
-	if v := strings.TrimSpace(os.Getenv("PANCHITO_GITHUB_CLIENT_ID")); v != "" {
+	if v := strings.TrimSpace(os.Getenv("QAYABA_GITHUB_CLIENT_ID")); v != "" {
 		return v
 	}
 	if v := strings.TrimSpace(advertised); v != "" {

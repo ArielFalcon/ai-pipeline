@@ -17,7 +17,7 @@
 //      reading `process.env`) — CLAUDE.md's env-read confinement invariant forbids a NEW
 //      `process.env` read inside qa-engine/src; the composition-root shell
 //      (src/server/rewritten-engine-factory.ts) resolves the sandbox ONCE and passes it in, exactly
-//      like PANCHITO_ROOT/GITHUB_TOKEN are injected into tier-4a's adapters. See sandbox.ts's own
+//      like QAYABA_ROOT/GITHUB_TOKEN are injected into tier-4a's adapters. See sandbox.ts's own
 //      header for the full rationale.
 //
 // Runtime note: the orchestrator image ships Node plus Python, Go, Rust, Maven and Gradle (see the

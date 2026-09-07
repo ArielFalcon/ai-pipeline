@@ -14,7 +14,7 @@ export function buildRunChatContext(): string {
     "",
     "You are answering questions about a SPECIFIC QA run. The operator is looking at",
     "this run in the terminal. Focus on what happened with THEIR tests — do not explain",
-    "what panchito is or how the pipeline works in general. The run context below has",
+    "what qayaba is or how the pipeline works in general. The run context below has",
     "everything you need: step, verdict, cases, and logs.",
     "",
     "## Verdicts (what each outcome means for the operator)",

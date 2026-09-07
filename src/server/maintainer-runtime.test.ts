@@ -83,7 +83,7 @@ function harness(opts: { root: string; autonomous: boolean; promptReturn: string
     getAgentDeps: () => agentDeps(opts.promptReturn),
     setShuttingDown: () => {},
     root: opts.root,
-    selfRepo: "Org/panchito",
+    selfRepo: "Org/qayaba",
     autonomous: opts.autonomous,
     port: 9999,
   };
@@ -198,7 +198,7 @@ test("triggerMaintainer redacts a secret-shaped error before logging the session
     getAgentDeps: () => failingAgentDeps,
     setShuttingDown: () => {},
     root,
-    selfRepo: "Org/panchito",
+    selfRepo: "Org/qayaba",
     autonomous: true,
     port: 9999,
   };
@@ -269,7 +269,7 @@ test("triggerMaintainer redacts a token-shaped error before logging the post-swa
     getAgentDeps: () => agentDeps(fixReply()),
     setShuttingDown: () => {},
     root,
-    selfRepo: "Org/panchito",
+    selfRepo: "Org/qayaba",
     autonomous: true,
     port: 9999,
   };

@@ -1,4 +1,4 @@
-# panchito — Landing Page Design Brief
+# qayaba — Landing Page Design Brief
 
 **Audience of this document:** a designer/coding model that will generate the full HTML of the page.
 **Goal:** produce a single, self-contained, production-quality landing page that is **faithful to the intent below** — a sophisticated product landing that *demonstrates* an autonomous E2E QA agent through interactive, animated demos, not walls of text.
@@ -20,14 +20,14 @@ Read the whole brief before generating. When in doubt, prefer the choice that ma
 2. All four demos are implemented with the **shared data-driven player** (Section 5) and follow the **demo pattern** (bold visual metaphor + concise explanatory text).
 3. The visual language is **bold editorial framing with authentic terminal/CLI surfaces inside the demos** (Section 3).
 4. Bilingual EN/ES toggle works and persists (Section 8).
-5. Brand is a **swappable token layer** (the name "panchito" and all colors/type come from CSS variables).
+5. Brand is a **swappable token layer** (the name "qayaba" and all colors/type come from CSS variables).
 6. Nothing looks like a default Tailwind/Bootstrap/AI-generated SaaS page (Section 11).
 
 ---
 
 ## 1. The product (context you must internalize)
 
-**panchito** is an autonomous End-to-End QA agent. On every deploy to a DEV environment it:
+**qayaba** is an autonomous End-to-End QA agent. On every deploy to a DEV environment it:
 1. Reads the **change** (the commit diff + intent), across one or many repos (frontend + microservices).
 2. Computes the **blast radius** through real code relationships and writes a focused **test plan**.
 3. Generates **Playwright** E2E tests for what could break.
@@ -64,7 +64,7 @@ The page is a **Scenario Engine wrapped in a scroll narrative**:
 
 **Tone:** bold editorial × engineered. Big confident typography and asymmetric, magazine-like layout for the *narrative*, with **authentic terminal/CLI surfaces** living *inside* the demos. The contrast between **editorial (paper, big type, whitespace)** and **terminal (dark, monospace, streaming logs)** is the signature of the design. Use it deliberately: alternate dark "engine" bands with lighter "editorial" bands to create rhythm.
 
-**This is a provisional brand layer — implement everything via CSS custom properties so it can be swapped when the real "panchito" identity lands.**
+**This is a provisional brand layer — implement everything via CSS custom properties so it can be swapped when the real "qayaba" identity lands.**
 
 ### Color tokens (provisional, semantic)
 The palette doubles as the product's verdict vocabulary — use these consistently for status:
@@ -77,7 +77,7 @@ The palette doubles as the product's verdict vocabulary — use these consistent
 --line:       #26262F   /* hairlines/borders on dark                 */
 
 /* brand accent (swap on rebrand) */
---brand:      #C6F23A   /* acid lime — "alive / panchito"            */
+--brand:      #C6F23A   /* acid lime — "alive / qayaba"            */
 
 /* status / verdict semantics (used in demos AND copy) */
 --pass:       #34E29B   /* green   — pass / approved / PR            */
@@ -102,16 +102,16 @@ Dark-first for hero + demos; use `--paper` bands for narrative/comparison sectio
 
 ## 4. Page structure (in order)
 
-1. **Sticky nav** — wordmark `panchito` (left), section anchors (center, optional), **EN/ES toggle** + **GitHub** + primary CTA (right). Transparent over hero, solidifies on scroll.
+1. **Sticky nav** — wordmark `qayaba` (left), section anchors (center, optional), **EN/ES toggle** + **GitHub** + primary CTA (right). Transparent over hero, solidifies on scroll.
 2. **Hero** — editorial H1 + sub-copy + two CTAs ("Run a live scenario" → scrolls to engine; "See it work" → scrolls to Demo 1). Background: a subtle, always-on micro-demo — a commit landing and a PR card being "born" on loop (low-key, not distracting). Eyebrow: "Autonomous E2E QA".
 3. **Demo 1 — Blast radius / analysis** (dark band). Metaphor: dependency graph (Section 6.1).
 4. **Demo 2 — Generate → review → coverage → run → record** (the full flow; dark band). (Section 6.2)
 5. **Demo 3 — Ask it anything** (paper band). Conversational + memory. (Section 6.3)
 6. **Demo 4 — It tests itself** (dark band). Recursive/self-improving. (Section 6.4)
 7. **Scenario Engine** (dark, full-bleed, the climax). Interactive. (Section 7)
-8. **Comparison** (paper band). "Where panchito is different" table vs the market. (Section 9)
+8. **Comparison** (paper band). "Where qayaba is different" table vs the market. (Section 9)
 9. **Final CTA / waitlist** (dark band). Email capture (no backend; see Section 7) + GitHub.
-10. **Footer** — wordmark, EN/ES toggle, minimal links, "made with panchito" wink.
+10. **Footer** — wordmark, EN/ES toggle, minimal links, "made with qayaba" wink.
 
 ---
 
@@ -165,7 +165,7 @@ Keep each component dumb and driven by events. One engine, many faces.
 
 ### 6.1 Demo 1 — "Sees the blast radius, not the whole app" (the analysis phase)
 
-**This is the phase BEFORE execution.** It shows how panchito analyzes **multiple repos** (frontend + microservices), computes the **blast radius** of a diff through **real relationships**, and ends by assembling a **plan** — before running any test.
+**This is the phase BEFORE execution.** It shows how qayaba analyzes **multiple repos** (frontend + microservices), computes the **blast radius** of a diff through **real relationships**, and ends by assembling a **plan** — before running any test.
 
 **Metaphor (the `Graph` component):**
 - Render the codebase as a **graph of nodes** grouped in 2–3 **clusters** (e.g., `web-frontend`, `checkout-service`, `payments-service`) with edges between/within clusters.
@@ -178,9 +178,9 @@ Keep each component dumb and driven by events. One engine, many faces.
 
 **Copy**
 - EN H2: **"It doesn't test everything. It tests what your change can break."**
-  Sub: "panchito maps your code — across every repo, frontend to microservices — into a dependency graph. When a commit lands, it grows the blast radius through *real* relationships: a class you changed, injected three services away, still lights up. Then it writes a focused test plan — before running a single test."
+  Sub: "qayaba maps your code — across every repo, frontend to microservices — into a dependency graph. When a commit lands, it grows the blast radius through *real* relationships: a class you changed, injected three services away, still lights up. Then it writes a focused test plan — before running a single test."
 - ES H2: **"No prueba todo. Prueba lo que tu cambio puede romper."**
-  Sub: "panchito mapea tu código —en todos tus repos, del frontend a los microservicios— como un grafo de dependencias. Cuando entra un commit, hace crecer el blast-radius a través de relaciones *reales*: una clase que cambiaste, inyectada tres servicios más allá, igual se enciende. Después arma un plan de tests enfocado — antes de correr un solo test."
+  Sub: "qayaba mapea tu código —en todos tus repos, del frontend a los microservicios— como un grafo de dependencias. Cuando entra un commit, hace crecer el blast-radius a través de relaciones *reales*: una clase que cambiaste, inyectada tres servicios más allá, igual se enciende. Después arma un plan de tests enfocado — antes de correr un solo test."
 
 ### 6.2 Demo 2 — "Writes a real test — and a second model proves it"
 
@@ -195,33 +195,33 @@ Keep each component dumb and driven by events. One engine, many faces.
 6. `Decide` — drops a `PRCard` (green, auto-merge) on the happy path, or an `IssueCard` (red) on failure. Include a small toggle to flip between the green and red endings.
 
 **Copy**
-- EN H2: **"A test that runs green isn't proof. panchito proves it."**
+- EN H2: **"A test that runs green isn't proof. qayaba proves it."**
   Sub: "It writes the spec, a *different* model reviews it for real assertions, and change-coverage confirms the test actually executes the lines you changed. Then it runs against your live DEV and tells you — in plain language — what broke. Green and approved → a PR into *your* repo. Broken → a GitHub Issue. Your tests, your git, no lock-in."
-- ES H2: **"Un test en verde no es una prueba. panchito lo demuestra."**
+- ES H2: **"Un test en verde no es una prueba. qayaba lo demuestra."**
   Sub: "Escribe el spec, un modelo *distinto* lo revisa buscando asserts reales, y el change-coverage confirma que el test realmente ejecuta las líneas que cambiaste. Después corre contra tu DEV vivo y te dice — en lenguaje claro — qué se rompió. Verde y aprobado → un PR a *tu* repo. Roto → un GitHub Issue. Tus tests, tu git, sin lock-in."
 
 ### 6.3 Demo 3 — "Ask it anything"
 
-**Metaphor:** a `Chat` thread; when panchito answers, a faint **memory timeline** of past runs lights up behind/below the answer (showing it pulling from history). Light, paper-band section.
+**Metaphor:** a `Chat` thread; when qayaba answers, a faint **memory timeline** of past runs lights up behind/below the answer (showing it pulling from history). Light, paper-band section.
 
 **Sequence:** user asks *"why did checkout fail yesterday?"* → typing indicator → answer synthesized from memory: "Run #314 — the coupon test failed 3 of the last 8 runs. Root cause: selector ambiguity on the pay button. Last stable after commit `abc123` added `data-testid='pay-now'`." Offer 2–3 suggested follow-up chips ("show flaky tests", "onboard a repo").
 
 **Copy**
 - EN H2: **"Your test suite, now something you can talk to."**
-  Sub: "panchito remembers every run — fragile flows, flaky selectors, what fixed them last time — and answers from memory. Trigger runs, explain failures, onboard a repo: in plain language."
+  Sub: "qayaba remembers every run — fragile flows, flaky selectors, what fixed them last time — and answers from memory. Trigger runs, explain failures, onboard a repo: in plain language."
 - ES H2: **"Tu suite de tests, ahora algo con lo que podés hablar."**
-  Sub: "panchito recuerda cada corrida — flujos frágiles, selectores flaky, qué los arregló la última vez — y responde desde su memoria. Dispará corridas, explicá fallos, onboardeá un repo: en lenguaje natural."
+  Sub: "qayaba recuerda cada corrida — flujos frágiles, selectores flaky, qué los arregló la última vez — y responde desde su memoria. Dispará corridas, explicá fallos, onboardeá un repo: en lenguaje natural."
 
 ### 6.4 Demo 4 — "It tests itself"
 
-**Metaphor:** recursion / a mirror. The product's own agents emit small **error tickets** that flow toward a central **maintainer agent**; it resolves them and **commits to its own repo**; a compact **status/monitoring panel** pulses (uptime, runs today, self-fixes). Subtle recursive motif (e.g., a small panchito testing a smaller panchito, or a loop edge).
+**Metaphor:** recursion / a mirror. The product's own agents emit small **error tickets** that flow toward a central **maintainer agent**; it resolves them and **commits to its own repo**; a compact **status/monitoring panel** pulses (uptime, runs today, self-fixes). Subtle recursive motif (e.g., a small qayaba testing a smaller qayaba, or a loop edge).
 
-**Sequence:** `qa-generator` and `qa-reviewer` emit "issue reported" → arrows converge on `qa-maintainer` → it opens **its own PR** ("fix: stabilize flaky selector in own suite, auto-merge ✓") → monitoring panel ticks up "self-fixes: 7 this week". `PipelineRail` runs against panchito itself.
+**Sequence:** `qa-generator` and `qa-reviewer` emit "issue reported" → arrows converge on `qa-maintainer` → it opens **its own PR** ("fix: stabilize flaky selector in own suite, auto-merge ✓") → monitoring panel ticks up "self-fixes: 7 this week". `PipelineRail` runs against qayaba itself.
 
 **Copy**
-- EN H2: **"The first thing panchito tests is panchito."**
+- EN H2: **"The first thing qayaba tests is qayaba."**
   Sub: "Its agents report their own failures to a maintainer agent that fixes them and commits the change — with live log and status monitoring. The code that uses itself to get better, every day. (Like building git in git.)"
-- ES H2: **"Lo primero que panchito prueba es panchito."**
+- ES H2: **"Lo primero que qayaba prueba es qayaba."**
   Sub: "Sus agentes le reportan sus propios fallos a un agente de mantenimiento que los resuelve y commitea el cambio — con monitoreo de logs y status en vivo. El código que se usa a sí mismo para mejorar, cada día. (Como construir git en git.)"
 
 ---
@@ -241,7 +241,7 @@ A full-bleed dark section where the visitor runs the pipeline themselves.
 - **Demo mode is capped** — surface a small note: "Demo mode is capped (a few commits / a handful of tests) so you get the feel in seconds, not an 80-test marathon." This is a real product behavior; communicate it.
 - **Execution adapters (architecture to encode in the JS):**
   - `mockAdapter` (default, bundled): deterministic scripted scenarios — **always works, no backend.** Powers the page on Vercel.
-  - `liveAdapter` (optional, future): if a `window.PANCHITO_DEMO_API` URL is configured, POST `{repo, depth | full}` and stream real bounded results into the *same* renderer. If unset/unreachable, fall back gracefully to mock or the waitlist.
+  - `liveAdapter` (optional, future): if a `window.QAYABA_DEMO_API` URL is configured, POST `{repo, depth | full}` and stream real bounded results into the *same* renderer. If unset/unreachable, fall back gracefully to mock or the waitlist.
 - **"Run on my real repo" → waitlist:** an email field that, with no backend, posts to a form service (Formspree/Firebase) **or** is a `mailto:`/no-op stub clearly marked `TODO: wire form endpoint`. Do not invent a backend.
 
 **Copy**
@@ -252,16 +252,16 @@ A full-bleed dark section where the visitor runs the pipeline themselves.
 
 ## 8. Bilingual (EN/ES) + brand tokens
 
-- **i18n:** a single JS dictionary `{ en: {...}, es: {...} }` keyed by string id; a `data-i18n` attribute on text nodes; a toggle in nav/footer that swaps language and persists to `localStorage` (`panchito.lang`). Default to the browser language, fallback EN. All copy in this brief is provided in both languages — use it.
-- **Brand tokens:** the wordmark text (`panchito`), all colors, and font families come from CSS custom properties / a small `BRAND` config object, so the identity can be replaced in one place when it's ready. Treat the current name/palette/type as **provisional**.
+- **i18n:** a single JS dictionary `{ en: {...}, es: {...} }` keyed by string id; a `data-i18n` attribute on text nodes; a toggle in nav/footer that swaps language and persists to `localStorage` (`qayaba.lang`). Default to the browser language, fallback EN. All copy in this brief is provided in both languages — use it.
+- **Brand tokens:** the wordmark text (`qayaba`), all colors, and font families come from CSS custom properties / a small `BRAND` config object, so the identity can be replaced in one place when it's ready. Treat the current name/palette/type as **provisional**.
 
 ---
 
 ## 9. Comparison section
 
-A compact, scannable table — "Where panchito is different." Rows = the differentiators; columns = panchito + the market. Keep it honest and confident, not trash-talking.
+A compact, scannable table — "Where qayaba is different." Rows = the differentiators; columns = qayaba + the market. Keep it honest and confident, not trash-talking.
 
-| | **panchito** | QA Wolf | Octomind | Meticulous | Ranger |
+| | **qayaba** | QA Wolf | Octomind | Meticulous | Ranger |
 |---|---|---|---|---|---|
 | Commit-aware blast radius | ✓ | — | — | — | partial |
 | Independent 2nd-model review | ✓ | human | single-model | — | human |

@@ -32,7 +32,7 @@ const DEFAULT_MUTATION_TIMEOUT_MS = 600_000;
 // core, so no per-framework runner plugin is needed. Falls back to `npx` only if the bundled
 // binary is somehow absent (a degraded image) — logged by the caller via the null result.
 export function resolveStrykerCommand(): { cmd: string; args: string[] } {
-  const root = process.env.PANCHITO_ROOT ?? process.cwd();
+  const root = process.env.QAYABA_ROOT ?? process.cwd();
   const bin = join(root, "node_modules", ".bin", "stryker");
   if (existsSync(bin)) return { cmd: bin, args: ["run"] };
   return { cmd: "npx", args: ["stryker", "run"] };

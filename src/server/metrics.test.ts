@@ -48,10 +48,10 @@ test("buildArtifactBytesMetrics: emits one line per app and correct HELP/TYPE he
   });
   const cache: { current: ArtifactSizeCache | null } = { current: null };
   const output = buildArtifactBytesMetrics(deps, cache, 60_000, 1_000_000);
-  assert.match(output, /# HELP panchito_qa_artifact_bytes/);
-  assert.match(output, /# TYPE panchito_qa_artifact_bytes gauge/);
-  assert.match(output, /panchito_qa_artifact_bytes\{app="portfolio"\} 2048/);
-  assert.match(output, /panchito_qa_artifact_bytes\{app="docs"\} 0/);
+  assert.match(output, /# HELP qayaba_qa_artifact_bytes/);
+  assert.match(output, /# TYPE qayaba_qa_artifact_bytes gauge/);
+  assert.match(output, /qayaba_qa_artifact_bytes\{app="portfolio"\} 2048/);
+  assert.match(output, /qayaba_qa_artifact_bytes\{app="docs"\} 0/);
 });
 
 test("buildArtifactBytesMetrics: uses cached result within TTL, does not re-scan", () => {

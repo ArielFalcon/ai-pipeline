@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ArielFalcon/panchito/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/contract"
 )
 
 func TestCreateRunSendsAuthAndDecodes(t *testing.T) {

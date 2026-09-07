@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ArielFalcon/panchito/internal/contract"
-	"github.com/ArielFalcon/panchito/internal/events"
+	"github.com/ArielFalcon/qayaba/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/events"
 )
 
 // Resuming a run that finished while detached lands on the recap. Like the live RunVerdict

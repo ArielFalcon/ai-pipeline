@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ArielFalcon/panchito/internal/events"
+	"github.com/ArielFalcon/qayaba/internal/events"
 	"github.com/charmbracelet/lipgloss"
 )
 

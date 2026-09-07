@@ -1,8 +1,8 @@
-# @panchito/sdk
+# @qayaba/sdk
 
-Typed TypeScript client for the panchito orchestrator control API.
+Typed TypeScript client for the qayaba orchestrator control API.
 
-- **Types are generated** from `contract/openapi.json` (the same artifact panchito's Go
+- **Types are generated** from `contract/openapi.json` (the same artifact qayaba's Go
   client consumes) via `npm run sdk:gen` → `src/types.gen.ts`. They never drift from the
   server — `tsc` fails if a wire shape changes.
 - **Only the transport is hand-written**: `transport.ts` (fetch + Bearer + error
@@ -12,7 +12,7 @@ Typed TypeScript client for the panchito orchestrator control API.
 ## Usage
 
 ```ts
-import { createClient } from "@panchito/sdk";
+import { createClient } from "@qayaba/sdk";
 
 // Same-origin (served by the orchestrator at /app): baseUrl "" carries the operator's creds.
 const client = createClient({ baseUrl: "", token });

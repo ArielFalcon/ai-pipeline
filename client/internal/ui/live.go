@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ArielFalcon/panchito/internal/api"
-	"github.com/ArielFalcon/panchito/internal/contract"
-	"github.com/ArielFalcon/panchito/internal/events"
+	"github.com/ArielFalcon/qayaba/internal/api"
+	"github.com/ArielFalcon/qayaba/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/events"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# qa — interactive layer for the panchito control API.
+# qa — interactive layer for the qayaba control API.
 # Talks HTTP to a RUNNING orchestrator (docker compose up). Needs: curl, jq.
 # Auth: set QA_API_TOKEN to match the service's QA_API_TOKEN.
 # Host:  override with QA_HOST (default localhost:8080).
@@ -62,7 +62,7 @@ Env: QA_HOST (default localhost:8080) · QA_API_TOKEN (if the service requires a
 
 Examples:
   qa run portfolio --latest --target e2e --mode complete --watch
-  qa run panchito --latest --target code --mode diff --watch
+  qa run qayaba --latest --target code --mode diff --watch
   qa run portfolio --ref feature/x --watch
   qa status
   qa logs portfolio --last 2

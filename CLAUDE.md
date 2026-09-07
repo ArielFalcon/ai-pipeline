@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`panchito` is an **app-agnostic, centralized AI-assisted E2E QA engine** (a
+`qayaba` is an **app-agnostic, centralized AI-assisted E2E QA engine** (a
 template — no app is bundled). It watches a team's repos; when a commit is
 deployed to DEV, an AI agent (OpenCode and/or Codex) generates Playwright E2E tests for the
 change's blast radius, runs them **against the live DEV site** (the app is never
@@ -248,7 +248,7 @@ Codex consumes the **provider-neutral** mirror of these under `agent/` (`agent/r
 - **Root-cause & project-agnostic — never tailor a fix to a configured test
   app.** Every fix and feature targets the underlying cause and must hold for
   ANY watched project. The apps in `config/apps/*` (`portfolio`, `petclinic`,
-  `jhipster-store`, `panchito`, …) are *interchangeable test targets, not design
+  `jhipster-store`, `qayaba`, …) are *interchangeable test targets, not design
   inputs* — never shape a code path "so app X passes"; reproduce on one,
   diagnose the root, generalize the solution. The ONLY legitimate
   project-shaped constraint is **declared, deliberate scope** (e.g.
@@ -343,7 +343,7 @@ JavaScript/TypeScript** scope — all interchangeable test targets, never design
 inputs (see Invariants): `jhipster-store` (Angular 21 gateway + Spring
 microservices, monorepo), `petclinic` (Spring, monorepo) and `portfolio`
 (static Astro) run in **e2e** mode against live DEV in **shadow mode**;
-`panchito` runs in **code** mode (the engine tests its own source, `code:
+`qayaba` runs in **code** mode (the engine tests its own source, `code:
 true`). The deploy gate is skipped wherever no `versionUrl` is configured
 (already-deployed/static targets). engram is enabled for persistent agent
 memory across runs.

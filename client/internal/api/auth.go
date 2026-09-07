@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/ArielFalcon/panchito/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/contract"
 )
 
 // Login exchanges a GitHub user token (obtained via the device flow in internal/auth) for a

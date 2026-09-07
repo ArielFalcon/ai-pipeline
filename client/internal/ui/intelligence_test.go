@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ArielFalcon/panchito/internal/api"
-	"github.com/ArielFalcon/panchito/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/api"
+	"github.com/ArielFalcon/qayaba/internal/contract"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 )
@@ -128,11 +128,11 @@ func TestIntelligenceCurriculumDistinguishesNoEvidenceFromZeroRate(t *testing.T)
 
 func TestIntelligenceGroundTruthScorecard(t *testing.T) {
 	avg := float32(0.82)
-	m := newIntelligenceModel(api.New("http://x", ""), "panchito")
+	m := newIntelligenceModel(api.New("http://x", ""), "qayaba")
 	m.loading = false
 	m.width = 96
 	m.view = &contract.IntelligenceView{
-		App:       "panchito",
+		App:       "qayaba",
 		Scorecard: &contract.ScorecardView{AvgValueScore: &avg, LastValueScore: &avg, MeasuredRuns: 1, TotalRuns: 1},
 	}
 	out := m.body()

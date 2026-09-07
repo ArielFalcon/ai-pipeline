@@ -26,6 +26,7 @@ import type {
 } from "../application/ports/index.ts";
 import type { QaCase } from "@kernel/qa-case.ts";
 import { AdjudicateService } from "../domain/adjudicate.service.ts";
+import { InfraError } from "@kernel/domain-error.ts";
 
 // Structural shape of the legacy runE2E return — the OUTER shape mirrors src/types.ts QaRunResult
 // and stays locally declared: the rule for this file is NO src/ imports (only the parity test may);
@@ -58,7 +59,10 @@ export class E2eExecutionStrategy implements ExecutionStrategyPort {
   constructor(private readonly runE2E: RunE2eFn) {}
 
   async run(req: ExecutionRequest): Promise<ExecutionResult> {
-    if (!req.baseUrl) throw new Error("E2eExecutionStrategy requires a baseUrl (live DEV URL)");
+    // An absent baseUrl is an app-config defect (dev.baseUrl missing/mistyped in the app YAML), NOT
+    // an orchestrator bug — InfraError so runner.ts's isInfraError classifies it as a clean
+    // infra-error verdict instead of a mislabeled "unexpected internal error" + maintainer incident.
+    if (!req.baseUrl) throw new InfraError("E2eExecutionStrategy requires a baseUrl (live DEV URL)");
     const result = await this.runE2E(req.specDir, {
       baseUrl: req.baseUrl,
       namespace: req.namespace,

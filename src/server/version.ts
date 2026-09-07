@@ -14,7 +14,7 @@ import type { VersionInfo } from "../contract/commands";
 export const WIRE_API_VERSION = "v1";
 
 // The oldest client this server still accepts. Bump deliberately when a breaking
-// contract change ships, so older binaries get a clear "update panchito".
+// contract change ships, so older binaries get a clear "update qayaba".
 export const MIN_CLIENT_VERSION = "0.1.0";
 
 // What the control plane can do — a forward-compatible client feature-detects
@@ -47,7 +47,7 @@ export function handshake(clientVersion?: string, githubClientId?: string): Vers
     // Advertise the OAuth App client id (public, not a secret) so the console can run the GitHub
     // device flow WITHOUT it being baked into the binary — configure it once on the server.
     ...(githubClientId ? { githubClientId } : {}),
-    ...(compatible ? {} : { message: `Update panchito: this server requires client >= ${MIN_CLIENT_VERSION} (you have ${clientVersion}).` }),
+    ...(compatible ? {} : { message: `Update qayaba: this server requires client >= ${MIN_CLIENT_VERSION} (you have ${clientVersion}).` }),
   };
 }
 

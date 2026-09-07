@@ -1,6 +1,6 @@
-# panchito (Go / Bubble Tea client)
+# qayaba (Go / Bubble Tea client)
 
-The installable terminal client for the Panchito control plane — an **independent
+The installable terminal client for the Qayaba control plane — an **independent
 channel** of the orchestrator's Channel Gateway, alongside (eventually replacing)
 the Ink TUI. See [docs/tui-vnext.md](../docs/tui-vnext.md) for the full design.
 
@@ -20,7 +20,7 @@ orchestrator's published `contract/openapi.json` (no hand-written drift).
 - ✅ HTTP + SSE client (`internal/api`): typed command verbs over the contract
   DTOs, and a `text/event-stream` reader that decodes RunEvents with `Last-Event-ID`
   reconnect (stops on the terminal `run.verdict`). UI-agnostic, stdlib-only.
-- ✅ Bubble Tea skeleton (`internal/ui`, `cmd/panchito`): an Elm root model routing
+- ✅ Bubble Tea skeleton (`internal/ui`, `cmd/qayaba`): an Elm root model routing
   to per-screen sub-models, the brand palette in `theme.go`. **connect** (host +
   token, probes ListApps as the auth check) and **home** (app list) screens wired
   to `api.Client`.
@@ -43,7 +43,7 @@ orchestrator's published `contract/openapi.json` (no hand-written drift).
 ## Run
 
 ```bash
-go run ./cmd/panchito     # connects to localhost:8080 by default
+go run ./cmd/qayaba     # connects to localhost:8080 by default
 ```
 
 ## Commands

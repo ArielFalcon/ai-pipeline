@@ -20,7 +20,7 @@ test("handshake is compatible for a new-enough client and omits a message", () =
 test("handshake flags an old client and explains how to fix it", () => {
   const info = handshake("0.0.9");
   assert.equal(info.compatible, false);
-  assert.match(info.message ?? "", /Update panchito/);
+  assert.match(info.message ?? "", /Update qayaba/);
 });
 
 test("handshake without a client version assumes compatible (cannot judge)", () => {

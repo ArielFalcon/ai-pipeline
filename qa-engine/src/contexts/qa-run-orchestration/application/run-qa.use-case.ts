@@ -1953,7 +1953,17 @@ export class RunQaUseCase {
     await enforceConfinement();
     let publishOutcome: string | undefined;
     if (decision.sideEffect !== "none") {
-      const published = await this.deps.publication.publish({
+      // P4 demo guard: publication (GitHub PR/Issue, git push) can throw a plain Error AFTER the
+      // use-case already decided a verdict (e.g. a wireGateway 5xx, a rejected push). Letting it
+      // escape to the runner's catch-overwrite flips the persisted record from "pass"/"fail" to a
+      // mislabeled "unexpected internal error" — the run succeeded/failed cleanly, only the
+      // notification hop failed. Catch it HERE, preserve the decided verdict's record, and surface
+      // the publication failure as an inconclusive infra-error diagnostic instead. Non-Error throws
+      // (never expected, but structurally possible) still escape so the runner marks them — we do
+      // not fabricate false-confidence.
+      let published: Awaited<ReturnType<PublicationPort["publish"]>>;
+      try {
+        published = await this.deps.publication.publish({
         verdict: run.verdict,
         cases: run.cases,
         logs: run.logs,
@@ -1993,6 +2003,12 @@ export class RunQaUseCase {
         isCode: cfg.isCode,
         ...(resolveTested()?.length ? { tested: resolveTested() } : {}),
       });
+      } catch (pubErr) {
+        return this.infraErrorResult(
+          `publication failed after verdict was decided (decided: ${run.verdict}, reviewerApproved: ${reviewerApproved}): ${pubErr instanceof Error ? pubErr.message : String(pubErr)}`,
+          workspace.mirrorDir,
+        );
+      }
       publishOutcome = published.outcome;
       // judgment-day round 2 (FIX 3, HIGH): the vcs-write tracked-file denylist guard's own revert
       // (VcsWritePort.commit's `revertedDenylisted`, surfaced through the "pr" route) must never be

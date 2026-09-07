@@ -32,11 +32,21 @@ export class StalledAgentError extends InfraError {
   }
 }
 
+// Hard deadline on an agent call (withTimeout in the transport policy). Distinct from
+// StalledAgentError (inactivity watchdog) so the operator message can say "the agent exceeded its
+// budget" instead of "the agent stalled"; still inconclusive, never a code/test verdict.
+export class AgentTimeoutError extends InfraError {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "AgentTimeoutError";
+  }
+}
+
 // True when a thrown error is genuine infrastructure. The name fallbacks cover cross-realm cases where
 // `instanceof` fails (e.g. an SDK loaded in two module realms); the message check covers operator cancel.
 export function isInfraError(err: unknown): boolean {
   if (err instanceof InfraError) return true;
-  if (err instanceof Error && (err.name === "InfraError" || err.name === "AgentUnavailableError" || err.name === "StalledAgentError" || err.name === "DeployTimeoutError")) return true;
+  if (err instanceof Error && (err.name === "InfraError" || err.name === "AgentUnavailableError" || err.name === "StalledAgentError" || err.name === "AgentTimeoutError" || err.name === "DeployTimeoutError")) return true;
   if (err instanceof Error && /\brun cancelled by operator\b/i.test(err.message)) return true;
   return false;
 }

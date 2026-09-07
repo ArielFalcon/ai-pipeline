@@ -1,4 +1,4 @@
-// Package api is the UI-agnostic client for the Panchito control plane: the
+// Package api is the UI-agnostic client for the Qayaba control plane: the
 // command verbs (typed with the codegen'd contract DTOs) and the RunEvent SSE
 // stream. Bubble Tea wraps these as tea.Cmds; nothing here knows about the UI.
 package api
@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ArielFalcon/panchito/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/contract"
 )
 
 type Client struct {

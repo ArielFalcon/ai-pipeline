@@ -573,7 +573,7 @@ function withCodexRolePreamble(role: AgentRole, text: string, promptRoot: string
   return [
     `Agent role: ${role}`,
     "",
-    "Follow the same provider-neutral Panchito prompts and verdict contracts used by the OpenCode runtime.",
+    "Follow the same provider-neutral Qayaba prompts and verdict contracts used by the OpenCode runtime.",
     "All authoritative decisions must be returned in the blocking final response; live events are observational only.",
     "",
     shared ? `## Shared prompt\n${shared}` : "",

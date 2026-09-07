@@ -212,7 +212,7 @@ as working; this is the largest truth gap in the system.
 `${mirrorDir}/e2e` for every app; setup (`:404`), validate (`:720`), execute (`:932`) all
 consume it; `ExecutionPortAdapter` forwards verbatim to `runCodeTests(repoDir=...)`. Legacy
 passed `mirrorDir` for code setup/execute (`git show 1228ea7~1:src/pipeline.ts:1299,2497`).
-panchito (the only `code: true` app) has no `e2e/` dir → code runs die in setup/validate and
+qayaba (the only `code: true` app) has no `e2e/` dir → code runs die in setup/validate and
 can never reach `pass`. Masked by parity tests that stub `validate()` uniformly.
 
 **Solution.** Make the workspace target-aware at the adapter:

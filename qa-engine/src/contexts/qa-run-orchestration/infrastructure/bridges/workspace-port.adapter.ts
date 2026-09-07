@@ -24,7 +24,7 @@
 // WS2.1 (full-flow remediation, code-mode restoration): this adapter was previously e2e-only in
 // effect — the composition root always passed "e2e" as the rel-dir (rewritten-engine-factory.ts's
 // own `const e2eRelDir = "e2e"` was UNCONDITIONAL), so a code:true app's specDir resolved to
-// `<mirrorDir>/e2e`, a directory that never exists for a code-mode watched repo (panchito has no
+// `<mirrorDir>/e2e`, a directory that never exists for a code-mode watched repo (qayaba has no
 // e2e/ folder) — setup/validate/execute all died against a phantom path. Legacy passed `mirrorDir`
 // itself for the code target (git show 1228ea7~1:src/pipeline.ts:1299 `setupCode(mirrorDir, ...)`,
 // :2497 `executeCode(mirrorDir, ...)` — never a mirrorDir/e2e subpath). `specRelDir` (renamed from

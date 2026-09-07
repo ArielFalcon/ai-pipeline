@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Panchito Control Plane",
+    "title": "Qayaba Control Plane",
     "version": "1.0.0",
     "description": "The Channel Gateway contract: queued commands + the RunEvent SSE stream. Source of truth: src/contract/*.ts (zod). GENERATED — do not edit by hand; run `npm run contract:gen`."
   },

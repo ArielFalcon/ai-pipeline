@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-14
 **Status:** approved (design), pending spec review → implementation plan
-**Author:** Panchito iteration loop
+**Author:** Qayaba iteration loop
 
 ## 1. Problem
 

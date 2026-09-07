@@ -42,7 +42,7 @@ export interface ArtifactSizeCache {
   entries: ArtifactSizeEntry[];
 }
 
-/** Build the `panchito_qa_artifact_bytes` Prometheus gauge block.
+/** Build the `qayaba_qa_artifact_bytes` Prometheus gauge block.
  *  Uses a TTL cache so every scrape does not trigger a full filesystem scan. */
 export function buildArtifactBytesMetrics(
   deps: ArtifactBytesDeps,
@@ -55,10 +55,10 @@ export function buildArtifactBytesMetrics(
   }
   const lines: string[] = [];
   if (cache.current.entries.length === 0) return "";
-  lines.push(`# HELP panchito_qa_artifact_bytes Bytes used by .qa/ artifacts per app`);
-  lines.push(`# TYPE panchito_qa_artifact_bytes gauge`);
+  lines.push(`# HELP qayaba_qa_artifact_bytes Bytes used by .qa/ artifacts per app`);
+  lines.push(`# TYPE qayaba_qa_artifact_bytes gauge`);
   for (const { name, bytes } of cache.current.entries) {
-    lines.push(`panchito_qa_artifact_bytes{app="${name}"} ${bytes}`);
+    lines.push(`qayaba_qa_artifact_bytes{app="${name}"} ${bytes}`);
   }
   return lines.join("\n");
 }

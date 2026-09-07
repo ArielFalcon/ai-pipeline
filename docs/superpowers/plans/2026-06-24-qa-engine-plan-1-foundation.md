@@ -15,7 +15,7 @@ This plan covers spec §7.2 Steps 0–3 and the first §11 checklist item. It do
 ## File Structure
 
 **Created**
-- `qa-engine/package.json` — the engine package manifest (name `@panchito/qa-engine`, `node:test`-based test script).
+- `qa-engine/package.json` — the engine package manifest (name `@qayaba/qa-engine`, `node:test`-based test script).
 - `qa-engine/tsconfig.json` — strict config with path aliases (`@kernel/*`, `@contexts/*`, `@interface/*`); referenced by the root tsconfig.
 - `qa-engine/src/.gitkeep` — holds the empty `src/` mirror root until Plan 2 fills it.
 - `qa-engine/test/characterization/equivalence.ts` — the pure structural `RunOutcome` comparator (the net's core; no IO).
@@ -47,7 +47,7 @@ The spec's `file:line` references are from a stale snapshot; the code keeps movi
 - [ ] **Step 1: Run the verification commands**
 
 ```bash
-cd /Users/arielyumn/Desktop/TRABAJO/panchito
+cd /Users/arielyumn/Desktop/TRABAJO/qayaba
 rg -n 'export (async )?function runPipeline' src/pipeline.ts
 wc -l src/pipeline.ts
 echo "pipeline.test.ts runPipeline calls: $(rg -c 'runPipeline\(' src/pipeline.test.ts)"
@@ -102,7 +102,7 @@ The two immovable seams are `PipelineDeps` + `runPipeline` (the function seam) a
 - [ ] **Step 1: Check whether a drift-guard already exists**
 
 ```bash
-cd /Users/arielyumn/Desktop/TRABAJO/panchito
+cd /Users/arielyumn/Desktop/TRABAJO/qayaba
 rg -l 'openapi' src/contract/*.test.ts
 cat package.json | rg 'contract:gen'
 rg -n 'gen-openapi' scripts/ 2>/dev/null
@@ -172,7 +172,7 @@ Create the empty parallel package with strict TS and path aliases. No engine cod
 ```json
 // qa-engine/package.json
 {
-  "name": "@panchito/qa-engine",
+  "name": "@qayaba/qa-engine",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -217,7 +217,7 @@ Create the empty parallel package with strict TS and path aliases. No engine cod
 - [ ] **Step 3: Create the mirror roots**
 
 ```bash
-cd /Users/arielyumn/Desktop/TRABAJO/panchito
+cd /Users/arielyumn/Desktop/TRABAJO/qayaba
 mkdir -p qa-engine/src qa-engine/test/characterization/goldens
 touch qa-engine/src/.gitkeep qa-engine/test/.gitkeep
 ```
@@ -461,7 +461,7 @@ Run the *legacy* `runPipeline` for the 10 canonical scenarios, sanitize each `Ru
 - [ ] **Step 1: Identify the 10 source scenarios**
 
 ```bash
-cd /Users/arielyumn/Desktop/TRABAJO/panchito
+cd /Users/arielyumn/Desktop/TRABAJO/qayaba
 rg -n "^test\(" src/pipeline.test.ts | rg -i "pass|fail|flaky|skip|invalid|infra|code|cross|shadow|context" | head -40
 ```
 
@@ -602,7 +602,7 @@ Verify the characterization net actually kills mutants in the trust keystone (`d
 - [ ] **Step 1: Read the existing Stryker pattern**
 
 ```bash
-cd /Users/arielyumn/Desktop/TRABAJO/panchito
+cd /Users/arielyumn/Desktop/TRABAJO/qayaba
 rg -n "stryker|testRunner|mutate" src/qa/learning/mutation-code.ts | head -20
 ```
 
@@ -665,10 +665,10 @@ git commit -m "test(qa-engine): Stryker gate proving the change-coverage net kil
 - Steps 1+3 scaffold + root-gate (glob + project references + test-setup preserved) → Tasks 3, 4. ✅
 - Step 1 characterization net (comparator + 10 goldens + parity test, structural equivalence excluding runId/at) → Tasks 5, 6. ✅
 - Step 2 Stryker verification (node-test-runner + typescript-checker, scoped to change-coverage, break=80) → Task 7. ✅
-- NOT in scope (correctly deferred): kernel/contexts (Plan 2–5), rewritten orchestrator + LegacyPipelineAdapter (Plan 6), cutover + panchito rename (Plan 7).
+- NOT in scope (correctly deferred): kernel/contexts (Plan 2–5), rewritten orchestrator + LegacyPipelineAdapter (Plan 6), cutover + qayaba rename (Plan 7).
 
 **2. Placeholder scan:** One deliberate porting step remains in Task 6 Step 3 (`scenarios.ts`) — it is explicitly described as real porting from named `pipeline.test.ts` tests with a concrete acceptance check (Step 4 producing 10 goldens with expected verdicts), not a vague "fill in". All other steps carry full code and exact commands. No "TBD"/"add error handling"/test-less steps.
 
 **3. Type consistency:** `ComparableOutcome`/`runOutcomeEquivalent` (Task 5) are reused verbatim in Task 6's parity test. `RunOutcome` fields (runId, app, sha, mode, target, verdict, errorClass, gateSignals.{static,coverageRatio,valueScore,reviewerCorrections,reviewerApproved,reviewerRationale,flaky,retries}, at) match `src/types.ts`. `CaptureDeps extends PipelineDeps` with `savedOutcomes`, matching the `pipeline.test.ts` stub convention.
 
-**Open follow-ups for later plans (not Plan-1 gaps):** Plan 6 extends `golden-parity.test.ts` to run the rewritten engine against these goldens; Plan 7 handles the `data/panchito.db` → panchito rename (C1).
+**Open follow-ups for later plans (not Plan-1 gaps):** Plan 6 extends `golden-parity.test.ts` to run the rewritten engine against these goldens; Plan 7 handles the `data/qayaba.db` → qayaba rename (C1).

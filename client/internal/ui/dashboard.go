@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ArielFalcon/panchito/internal/api"
-	"github.com/ArielFalcon/panchito/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/api"
+	"github.com/ArielFalcon/qayaba/internal/contract"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"

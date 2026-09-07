@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Strengthen panchito's deterministic (non-AI) signal so the agent receives richer, objective code context per run — first by fixing two signals whose resources already exist (PR-range blast radius, branch coverage), then by adding a language-agnostic static-analysis layer (difftastic, Lizard, tree-sitter, ast-grep) wired for JavaScript/TypeScript and Java but trivially extensible.
+**Goal:** Strengthen qayaba's deterministic (non-AI) signal so the agent receives richer, objective code context per run — first by fixing two signals whose resources already exist (PR-range blast radius, branch coverage), then by adding a language-agnostic static-analysis layer (difftastic, Lizard, tree-sitter, ast-grep) wired for JavaScript/TypeScript and Java but trivially extensible.
 
 **Architecture:** Two stages. **Stage 1** wires resources that already exist but are unused: `getChangedFilesInRange` (PR-range) and branch data in lcov/Istanbul (already emitted, never parsed). **Stage 2** adds a new deterministic module `src/qa/static-signal/` that runs in the orchestrator BEFORE generation, extracts structural signal from the diff, and injects it into the prompt as one rendered section — mirroring how `change-coverage.ts` measures and `exploration-brief.ts` renders. Every new signal is **fail-open, additive, signal-only**: it never blocks publish and degrades to "absent" when a tool or language is unsupported. The agent's semantic navigation (Serena/LSP) is untouched and complementary — the static layer pre-computes the cheap syntactic layer; Serena keeps the cross-file semantic layer.
 
@@ -1669,9 +1669,9 @@ RUN ARCH="$(dpkg --print-architecture)" \
 
 - [ ] **Step 2: Build to verify**
 
-Run: `docker build -t panchito-test .`
+Run: `docker build -t qayaba-test .`
 Expected: build succeeds; the three binaries are on PATH.
-Verify: `docker run --rm panchito-test sh -c "difft --version && lizard --version && sg --version"`
+Verify: `docker run --rm qayaba-test sh -c "difft --version && lizard --version && sg --version"`
 Expected: all three print versions.
 
 - [ ] **Step 3: Commit**

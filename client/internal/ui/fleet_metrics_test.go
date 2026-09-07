@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ArielFalcon/panchito/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/contract"
 )
 
 // The FLEET pass-rate (history) and NOW's pipeline progress are both rendered as "NN%",

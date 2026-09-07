@@ -22,7 +22,7 @@
 // injected instead of GitHubPrAdapter reading GITHUB_TOKEN itself.
 import { checkCircuit, recordCircuitFailure, recordCircuitSuccess } from "./resilience/circuit-breaker.ts";
 import { createStallWatchdog, type StallWatchdog } from "./resilience/stall-watchdog.ts";
-import { AgentUnavailableError, StalledAgentError, isInfraError } from "@kernel/domain-error.ts";
+import { AgentTimeoutError, AgentUnavailableError, StalledAgentError, isInfraError } from "@kernel/domain-error.ts";
 import { sanitizeText } from "./sanitize-text.ts";
 
 // ─── Legacy-mirrored types (declared locally — qa-engine never imports src/) ────────────────────
@@ -138,11 +138,14 @@ export interface RawAgentTransport {
 
 // ─── Generic pure helpers ────────────────────────────────────────────────────────────────────────
 
-// Timeout wrapper for a promise: rejects if it elapses. Prevents a hung agent run from blocking the
-// (sequential) queue, which would block every repo.
+// Timeout wrapper for a promise: rejects with an AgentTimeoutError (an InfraError subtype) if it
+// elapses. Prevents a hung agent run from blocking the (sequential) queue, which would block every
+// repo. An InfraError subtype is REQUIRED so runner.ts's isInfraError classifies the overrun as
+// infra-error (inconclusive env fault) instead of a mislabeled "unexpected internal error" + maintainer
+// incident — the demo-killer leak. Non-error-message-driven: classified by TYPE.
 export function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`${label}: timed out after ${ms}ms`)), ms);
+    const timer = setTimeout(() => reject(new AgentTimeoutError(`${label}: timed out after ${ms}ms`)), ms);
     p.then(
       (v) => {
         clearTimeout(timer);

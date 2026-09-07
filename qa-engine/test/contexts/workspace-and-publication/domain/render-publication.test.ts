@@ -136,7 +136,7 @@ test("renderPrBody: a green run with tested metadata present renders 'What this 
   });
 
   assert.match(body, /## What this PR adds/);
-  assert.match(body, /E2E tests generated\/updated by panchito for `abc1234`/);
+  assert.match(body, /E2E tests generated\/updated by qayaba for `abc1234`/);
   assert.match(body, /\*\*Covers:\*\*/);
   assert.match(body, /\*\*Checkout\*\*/);
   assert.match(body, /\*\*Login\*\*/);
@@ -145,7 +145,7 @@ test("renderPrBody: a green run with tested metadata present renders 'What this 
 
 test("renderPrBody: a code-target run renders the code-flavored wording", () => {
   const body = renderPrBody({ isCode: true, tested: [{ flow: "parseConfig", objective: "rejects malformed YAML" }] });
-  assert.match(body, /Source-code tests generated\/updated by panchito\./);
+  assert.match(body, /Source-code tests generated\/updated by qayaba\./);
   assert.match(body, /\*\*Validation:\*\* the repo's own test suite passed \(exit code 0\)/);
 });
 

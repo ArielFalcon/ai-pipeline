@@ -138,7 +138,7 @@ pass. If GATE A is not green, STOP and report — the strangler net is the preco
 slice. **Slice D (rewritten decision logic) cannot begin until GATE A has been green at least once.**
 
 **Deferred to Plan 7 (out of scope here):** the actual CUTOVER (flip the default to `rewritten`, rename to
-`panchito`, delete `LegacyPipelineAdapter` + `src/pipeline.ts`), justified by the Slice F evidence; and the
+`qayaba`, delete `LegacyPipelineAdapter` + `src/pipeline.ts`), justified by the Slice F evidence; and the
 Seam-3 `killTree` decoupling (after the user's `dom-snapshot.ts` WIP lands, via `CaptureDomDeps` injection).
 
 ## Tech Stack
@@ -177,7 +177,7 @@ Seam-3 `killTree` decoupling (after the user's `dom-snapshot.ts` WIP lands, via 
 
 - [ ] Confirm the `runPipeline` signature + verdict set are unchanged (grep, not line numbers):
   ```bash
-  cd /Users/arielyumn/Desktop/TRABAJO/panchito
+  cd /Users/arielyumn/Desktop/TRABAJO/qayaba
   rg -n "export async function runPipeline" src/pipeline.ts
   rg -n "export interface PipelineDeps" src/pipeline.ts
   rg -n "verdict: \"(pass|fail|flaky|invalid|infra-error|skipped)\"|verdict = \"" src/pipeline.ts | head -20
@@ -1153,7 +1153,7 @@ the test-execution original)
 - [x] Re-confirm the gap and the sibling entry points to wrap (grep — record the exact symbols/paths so each
   bridge wraps a REAL collaborator, not an invented one):
   ```bash
-  cd /Users/arielyumn/Desktop/TRABAJO/panchito
+  cd /Users/arielyumn/Desktop/TRABAJO/qayaba
   rg -n "implements (ChangeAnalysisPort|GenerationPort|ReviewPort|ValidationPort|ExecutionPort|ObjectiveSignalPort|PublicationPort|LearningPort|WorkspacePort|DeployGatePort|RunHistoryPort)" qa-engine/src/ || echo "ZERO — bridges absent, Task E.0 builds them (expected)"
   rg -ln "class GenerateTestsUseCase"                          qa-engine/src/contexts/generation/
   rg -ln "class AnalyzeChangeUseCase|analyze-change.use-case"  qa-engine/src/contexts/change-analysis/
@@ -1463,7 +1463,7 @@ the test-execution original)
   topic `sdd/qa-engine-plan-6/shadow-evidence` or a committed `docs/` note — match the project convention).
   This is a MANUAL step performed when DEV infra is available; the plan provides the command (F.2), the
   operator provides the run.
-- [ ] **Plan 6 ends here.** The cutover (flip default to `rewritten`, rename to `panchito`, delete the legacy
+- [ ] **Plan 6 ends here.** The cutover (flip default to `rewritten`, rename to `qayaba`, delete the legacy
   adapter + `src/pipeline.ts`), and the Seam-3 `killTree` decoupling (after the user's `dom-snapshot.ts` WIP
   lands), are **Plan 7**, justified by this evidence.
 

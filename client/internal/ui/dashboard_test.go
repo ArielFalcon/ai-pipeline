@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ArielFalcon/panchito/internal/api"
-	"github.com/ArielFalcon/panchito/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/api"
+	"github.com/ArielFalcon/qayaba/internal/contract"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -69,12 +69,12 @@ func dashWith(apps []contract.AppView) dashboardModel {
 }
 
 func TestDashboardRendersSections(t *testing.T) {
-	m := dashWith([]contract.AppView{{Name: "portfolio"}, {Name: "panchito", Code: true}})
+	m := dashWith([]contract.AppView{{Name: "portfolio"}, {Name: "qayaba", Code: true}})
 	m.fleet = map[string][]contract.RunRecord{
 		"portfolio": {{App: "portfolio", Verdict: vptr(contract.RunRecordVerdictPass), At: "2026-06-13T14:00:00Z"}},
 	}
 	out := m.View()
-	for _, want := range []string{"FLEET", "portfolio", "panchito", "MODELS", "INTEGRITY", "RECENT", "proxy", "⚠"} {
+	for _, want := range []string{"FLEET", "portfolio", "qayaba", "MODELS", "INTEGRITY", "RECENT", "proxy", "⚠"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("dashboard missing %q:\n%s", want, out)
 		}

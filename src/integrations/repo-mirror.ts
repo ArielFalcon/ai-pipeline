@@ -25,6 +25,7 @@ import { execFile } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { RedactionPortAdapter } from "../orchestrator/sanitizer";
+import { InfraError } from "../errors";
 import { MirrorProvisionAdapter, type MirrorProvisionDeps } from "../../qa-engine/src/contexts/workspace-and-publication/infrastructure/mirror-provision.adapter";
 
 // sdd/migration-wiring-phase-2 Slice 7b-2: the canonical redaction adapter (env+pattern) for this
@@ -203,9 +204,19 @@ function scrubGitError(err: Error & { cmd?: string }): Error {
 
 export const realGit: Git = (args, cwd) =>
   new Promise((resolve, reject) => {
-    execFile("git", hardenGitArgs(args), { cwd, maxBuffer: 64 * 1024 * 1024, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } }, (err, stdout) =>
-      err ? reject(scrubGitError(err)) : resolve(stdout.toString()),
-    );
+    execFile("git", hardenGitArgs(args), { cwd, maxBuffer: 64 * 1024 * 1024, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } }, (err, stdout) => {
+      if (!err) {
+        resolve(stdout.toString());
+        return;
+      }
+      // A git fault is by definition an ENVIRONMENT fault (network/auth/corrupt mirror/host pressure),
+      // never a code/test verdict — wrap the scrubbed error in InfraError so runner.ts's isInfraError
+      // classifies it as a clean inconclusive infra-error instead of a mislabeled "unexpected internal
+      // error" + maintainer incident. Scrub first so the credential redaction happens at the spawn
+      // boundary before ANY error instance escapes.
+      const scrubbed = scrubGitError(err);
+      reject(new InfraError(scrubbed.message, { cause: scrubbed }));
+    });
   });
 
 export const defaultMirrorDeps: MirrorDeps = {

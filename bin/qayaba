@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# panchito — the Go/Bubble Tea terminal client for the panchito control plane.
+# qayaba — the Go/Bubble Tea terminal client for the qayaba control plane.
 # Talks HTTP to a RUNNING orchestrator (docker compose up). Build once, run freely:
 # the compiled binary lives in Go's bin dir; this shim builds it on first use only.
 # Env: QA_HOST (default localhost:8080) · QA_API_TOKEN (if the service requires auth).
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BIN="${GOBIN:-${GOPATH:-$HOME/go}/bin}/panchito"
+BIN="${GOBIN:-${GOPATH:-$HOME/go}/bin}/qayaba"
 
 # One-time (or after any client source changes): compile and install the binary.
 # The find rebuilds whenever ANY .go under client/ is newer than the binary.
 if [[ ! -x "$BIN" ]] || [[ -n "$(find "$REPO/client" -name '*.go' -newer "$BIN" -print -quit 2>/dev/null)" ]]; then
-  echo "panchito: building client (one-time)…" >&2
-  ( cd "$REPO/client" && go install ./cmd/panchito )
+  echo "qayaba: building client (one-time)…" >&2
+  ( cd "$REPO/client" && go install ./cmd/qayaba )
 fi
 
 exec "$BIN" "$@"

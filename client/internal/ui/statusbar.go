@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ArielFalcon/panchito/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/contract"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -15,7 +15,7 @@ import (
 // live system state regardless of which screen holds focus — the move that turns a
 // screen-swapper into a console.
 func statusBar(width int, serverVersion string, sys systemState, now time.Time) string {
-	left := renderSegs("", sg("◆ ", colEmber), sgb("panchito", colFg))
+	left := renderSegs("", sg("◆ ", colEmber), sgb("qayaba", colFg))
 	if serverVersion != "" {
 		left += renderSegs("", sg("  ", colFaint), sg(serverVersion, colDim))
 	}

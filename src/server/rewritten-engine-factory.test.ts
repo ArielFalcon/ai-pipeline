@@ -476,6 +476,41 @@ test("createRewrittenEngineFactory forwards its 4th (observer) argument to build
   assert.doesNotThrow(() => factory(app, "qa-bot-abc1234-run1", { mode: "diff" }, observer));
 });
 
+// Per-run --target (CLI / TUI `t`) is the product switch; YAML `code: true` is only the
+// default when the run omits target. An e2e-configured app MUST still compose the code
+// pipeline when the run says target:"code" — otherwise the operator launches "code" and
+// Playwright still runs against DEV.
+test("buildRewrittenCompositionConfig honors per-run target code on an e2e-configured app", () => {
+  const app: AppConfig = {
+    ...cfg("factory-run-target-code"),
+    qa: { ...cfg("factory-run-target-code").qa, shadow: true, valueOracle: "signal" },
+  };
+  const config = buildRewrittenCompositionConfig(app, { getAgentDeps: stubAgentDeps }, "qa-bot-tgtcode-run", { mode: "diff", target: "code" });
+  assert.equal(config.target, "code");
+  assert.equal(config.isCode, true);
+  assert.equal(
+    config.objectiveSignal.oracle.constructor.name,
+    "StrykerMutationOracleAdapter",
+    "code-target composition must pick the code oracle, not e2e fault-injection",
+  );
+});
+
+test("buildRewrittenCompositionConfig honors per-run target e2e on a code:true app", () => {
+  const app: AppConfig = {
+    ...cfg("factory-run-target-e2e"),
+    code: true,
+    qa: { ...cfg("factory-run-target-e2e").qa, shadow: true, valueOracle: "signal" },
+  };
+  const config = buildRewrittenCompositionConfig(app, { getAgentDeps: stubAgentDeps }, "qa-bot-tgte2e-run", { mode: "diff", target: "e2e" });
+  assert.equal(config.target, "e2e");
+  assert.equal(config.isCode, false);
+  assert.equal(
+    config.objectiveSignal.oracle.constructor.name,
+    "FaultInjectionOracleAdapter",
+    "e2e-target composition must pick fault-injection even when the YAML says code: true",
+  );
+});
+
 test("buildRewrittenCompositionConfig selects the code target + Stryker oracle for a code:true app", () => {
   const app: AppConfig = { ...cfg("factory-code"), code: true, dev: undefined };
   const config = buildRewrittenCompositionConfig(app, { getAgentDeps: stubAgentDeps }, "qa-bot-def5678-run2", { mode: "diff" });
@@ -702,7 +737,7 @@ test("buildVcsPublish (context mode): the tracked-file denylist guard is ALSO wi
 // wrappers, resolveRef :221, legacy publish :124 `[...authHeaderArgs(), "push", ...]`). Likewise
 // fresh mirrors have NO git identity (nothing
 // in Dockerfile/compose/repo-mirror configures one), which is why legacy committed with
-// `-c user.name=<GIT_AUTHOR_NAME ?? "panchito"> -c user.email=<GIT_AUTHOR_EMAIL ?? "panchito@users.
+// `-c user.name=<GIT_AUTHOR_NAME ?? "qayaba"> -c user.email=<GIT_AUTHOR_EMAIL ?? "qayaba@users.
 // noreply.github.com">` (publish.ts:107-108,120-123). buildVcsPublish now decorates the injected
 // git fn (factory-side — the qa-engine adapter stays token-agnostic per its own header contract)
 // so push carries auth and commit carries identity, byte-parity with legacy. These tests pin the
@@ -754,7 +789,7 @@ test("CRITICAL commit-identity: buildVcsPublish's commit carries -c user.name/-c
     const commit = calls.find((c) => subcommandOf(c) === "commit");
     assert.deepEqual(
       commit,
-      ["-c", "user.name=panchito", "-c", "user.email=panchito@users.noreply.github.com", "commit", "-m", "test(e2e): automated QA"],
+      ["-c", "user.name=qayaba", "-c", "user.email=qayaba@users.noreply.github.com", "commit", "-m", "test(e2e): automated QA"],
       "byte-parity with legacy publishChanges (publish.ts:107-108,120-123): identity flags precede the commit subcommand, with the SAME fallback values",
     );
   });
@@ -765,13 +800,13 @@ test("CRITICAL commit-identity: GIT_AUTHOR_NAME/GIT_AUTHOR_EMAIL override the fa
     const { git, calls } = fakeGit(" M src/orders.ts");
     const vcsWrite = buildVcsPublish(true, "diff", git, () => {});
 
-    await vcsWrite.publish({ mirrorDir: "/mirrors/org/panchito", branch: "qa-bot/def5678", sha: "def5678" });
+    await vcsWrite.publish({ mirrorDir: "/mirrors/org/qayaba", branch: "qa-bot/def5678", sha: "def5678" });
 
     const commit = calls.find((c) => subcommandOf(c) === "commit");
     assert.deepEqual(
       commit,
       ["-c", "user.name=qa-ops", "-c", "user.email=qa-ops@example.com", "commit", "-m", "test(code): automated QA"],
-      "explicit GIT_AUTHOR_* env values must win over the panchito fallbacks, matching legacy's `process.env.GIT_AUTHOR_NAME ?? \"panchito\"`",
+      "explicit GIT_AUTHOR_* env values must win over the qayaba fallbacks, matching legacy's `process.env.GIT_AUTHOR_NAME ?? \"qayaba\"`",
     );
   });
 });
@@ -793,7 +828,7 @@ test("buildVcsPublish (code target): changes anywhere -> stages the whole tree p
   const { git, calls } = fakeGit(" M src/orders.ts");
   const vcsWrite = buildVcsPublish(true, "diff", git, () => {});
 
-  const result = await vcsWrite.publish({ mirrorDir: "/mirrors/org/panchito", branch: "qa-bot/def5678", sha: "def5678" });
+  const result = await vcsWrite.publish({ mirrorDir: "/mirrors/org/qayaba", branch: "qa-bot/def5678", sha: "def5678" });
 
   assert.deepEqual(result, { changed: true, revertedDenylisted: [], revertedDangerous: [] });
   assert.deepEqual(calls[0], ["status", "--porcelain", "--", "."], "code target's status check scopes to '.', not 'e2e' (the whole tree, per publishCode's own CODE_ADD)");

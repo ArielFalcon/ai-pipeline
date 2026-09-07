@@ -1544,18 +1544,18 @@ git commit -m "feat(curriculum): surface evidence counters in the contract, CLI 
 
 ## Verification: end-to-end on a real run
 
-After Task 6, prove the loop closes rather than assuming it. `panchito` runs in code mode against its own source, so it needs no DEV environment.
+After Task 6, prove the loop closes rather than assuming it. `qayaba` runs in code mode against its own source, so it needs no DEV environment.
 
 - [ ] **Step 1: Clear any prior state and run once**
 
 ```bash
-npm run qa -- --app panchito --sha $(git rev-parse HEAD) --mode diff
+npm run qa -- --app qayaba --sha $(git rev-parse HEAD) --mode diff
 ```
 
 - [ ] **Step 2: Read the curriculum back**
 
 ```bash
-npm run qa -- --app panchito --learning
+npm run qa -- --app qayaba --learning
 ```
 
 Expected: the Curriculum block lists all ten archetypes; the ones whose exemplars the diff matched show a non-zero `credited/evaluated`; the rest show "no evidence yet". Every archetype at `0/0` after a run whose diff matched at least one structural pattern means `select()` returned empty — check that the run was diff mode and that `classificationDiff` was non-empty.

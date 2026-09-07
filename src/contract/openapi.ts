@@ -334,7 +334,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   return {
     openapi: "3.0.3",
     info: {
-      title: "Panchito Control Plane",
+      title: "Qayaba Control Plane",
       version: API_VERSION,
       description:
         "The Channel Gateway contract: queued commands + the RunEvent SSE stream. " +

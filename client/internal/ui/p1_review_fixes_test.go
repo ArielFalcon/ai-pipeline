@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ArielFalcon/panchito/internal/api"
-	"github.com/ArielFalcon/panchito/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/api"
+	"github.com/ArielFalcon/qayaba/internal/contract"
 )
 
 // A successful stop must not be silently swallowed: cancelRunCmd's runCanceledMsg has to be

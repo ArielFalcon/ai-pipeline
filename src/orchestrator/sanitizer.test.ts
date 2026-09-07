@@ -566,7 +566,7 @@ test("RedactionPortAdapter.redact ignores env vars whose NAME does not look like
 });
 
 test("RedactionPortAdapter() with no injected env defaults to process.env (real shell consumers stay covered)", () => {
-  const key = "PANCHITO_TEST_ENV_ADAPTER_TOKEN";
+  const key = "QAYABA_TEST_ENV_ADAPTER_TOKEN";
   const value = "processEnvDefaultSecretABC123";
   process.env[key] = value;
   try {

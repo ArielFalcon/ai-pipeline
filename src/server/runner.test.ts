@@ -268,6 +268,33 @@ test("PIPELINE_ENGINE=rewritten — the runner passes req.guidance to engineFact
   }
 });
 
+test("PIPELINE_ENGINE=rewritten — the runner passes req.target to engineFactory's 3rd (run) argument", async () => {
+  const prev = process.env.PIPELINE_ENGINE;
+  process.env.PIPELINE_ENGINE = "rewritten";
+  try {
+    const queue = new JobQueue();
+    const { port } = fakePort({ verdict: "pass" });
+    let receivedTarget: string | undefined;
+    const id = enqueueTrackedRun(
+      queue,
+      { app: "runner-target-code", sha: "def5678", target: "code", mode: "diff", source: "manual" },
+      {
+        loadApp: cfg,
+        engineFactory: (_appConfig, _namespace, run) => {
+          receivedTarget = run.target;
+          return port;
+        },
+      },
+    );
+    await queue.drain();
+    assert.equal(getRecord(id)!.verdict, "pass");
+    assert.equal(receivedTarget, "code", "engineFactory must receive req.target — YAML code:true is only the default when --target is omitted");
+  } finally {
+    if (prev === undefined) delete process.env.PIPELINE_ENGINE;
+    else process.env.PIPELINE_ENGINE = prev;
+  }
+});
+
 test("PIPELINE_ENGINE=rewritten — engineFactory's run.guidance is absent (not an empty string) when req.guidance is omitted", async () => {
   const prev = process.env.PIPELINE_ENGINE;
   process.env.PIPELINE_ENGINE = "rewritten";

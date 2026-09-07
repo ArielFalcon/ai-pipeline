@@ -24,10 +24,10 @@ const MIME: Record<string, string> = {
 };
 
 const PLACEHOLDER =
-  '<!doctype html><meta charset="utf-8"><title>panchito · dashboard</title>' +
+  '<!doctype html><meta charset="utf-8"><title>qayaba · dashboard</title>' +
   '<body style="font-family:system-ui;background:#14100e;color:#f5f1ee;display:grid;place-items:center;height:100vh;margin:0">' +
   '<div style="text-align:center;max-width:32rem;padding:1rem">' +
-  '<h1 style="font-weight:500">panchito · dashboard</h1>' +
+  '<h1 style="font-weight:500">qayaba · dashboard</h1>' +
   '<p style="color:#b9aea6">The web dashboard is not built yet. Build it into <code>web/dist</code> and it will be served here at <code>/app</code>.</p>' +
   "</div></body>";
 

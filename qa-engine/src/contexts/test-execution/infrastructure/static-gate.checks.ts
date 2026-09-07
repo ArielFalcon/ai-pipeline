@@ -101,7 +101,7 @@ export async function validateSpecs(
 }
 
 // B2: deterministic check — scan *.spec.ts files under specDir/flows (the GENERATED-spec dir;
-// panchito writes generated specs there) and return one error per file with NO assertion. Detects
+// qayaba writes generated specs there) and return one error per file with NO assertion. Detects
 // `expect(`, `await expect(`, `expect.soft(`, `expect.poll(`. Scoping to flows/ keeps the
 // assertion-free seed `cleanup.spec.ts` (at the e2e root) and any pre-existing non-generated spec
 // out of scope. A missing flows/ dir yields no errors (fail-safe — readdirSync throws → skip).

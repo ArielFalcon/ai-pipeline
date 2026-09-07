@@ -1,9 +1,9 @@
-# E2E Remediation Plan — panchito (panchito)
+# E2E Remediation Plan — qayaba (qayaba)
 
 > **Status:** Phase 0 (diagnosis + validation) COMPLETE. Keystone validated with real production data. Implementation of Phase 1 NOT yet started (one safe win applied).
 > **Last updated:** 2026-06-22
 > **Worktree:** `.claude/worktrees/e2e-remediation` on branch `worktree-e2e-remediation`, based on `main` @ `9e99501`.
-> **Engram topic keys:** `architecture/e2e-root-cause-decoupled-oracle`, `architecture/e2e-definitive-plan`, `architecture/e2e-keystone-validation` (project `panchito`).
+> **Engram topic keys:** `architecture/e2e-root-cause-decoupled-oracle`, `architecture/e2e-definitive-plan`, `architecture/e2e-keystone-validation` (project `qayaba`).
 
 ---
 
@@ -11,19 +11,19 @@
 
 A fresh session can resume exactly by reading this section + the engram observations above.
 
-**What this is:** a root-cause remediation of why panchito's generated E2E tests fail at execution on every real run (validated on `petclinic`). The diagnosis is finished and the keystone fix is validated with real data. The next action is to implement Phase 1.
+**What this is:** a root-cause remediation of why qayaba's generated E2E tests fail at execution on every real run (validated on `petclinic`). The diagnosis is finished and the keystone fix is validated with real data. The next action is to implement Phase 1.
 
 **Immediate next action:** Implement **Phase 1.1 (bounded agent self-execution loop)** + its **data-isolation corollary**, with TDD, in the worktree. See [§ Phase 1](#phase-1--correctness-the-roi-core) and [§ Next steps](#-next-steps-exact).
 
 **Environment state (verified 2026-06-22):**
-- Docker is UP. Containers running: `panchito-orchestrator-1` (healthy), `panchito-agents-1` (healthy), full `spring-petclinic-*` microservice stack.
-- **The real run history is in the Docker volume `panchito_qa-data`**, NOT in the repo. Re-access it with:
+- Docker is UP. Containers running: `qayaba-orchestrator-1` (healthy), `qayaba-agents-1` (healthy), full `spring-petclinic-*` microservice stack.
+- **The real run history is in the Docker volume `qayaba_qa-data`**, NOT in the repo. Re-access it with:
   ```bash
-  mkdir -p /tmp/realqa && docker cp panchito-orchestrator-1:/app/data/panchito.db /tmp/realqa/
-  docker cp panchito-orchestrator-1:/app/data/panchito.db-wal /tmp/realqa/ 2>/dev/null || true
-  sqlite3 /tmp/realqa/panchito.db "SELECT app,target,mode,verdict,COUNT(*) FROM run_outcomes GROUP BY 1,2,3,4;"
+  mkdir -p /tmp/realqa && docker cp qayaba-orchestrator-1:/app/data/qayaba.db /tmp/realqa/
+  docker cp qayaba-orchestrator-1:/app/data/qayaba.db-wal /tmp/realqa/ 2>/dev/null || true
+  sqlite3 /tmp/realqa/qayaba.db "SELECT app,target,mode,verdict,COUNT(*) FROM run_outcomes GROUP BY 1,2,3,4;"
   ```
-  ⚠️ The repo-local `data/panchito.db` is POLLUTED with test fixtures (apps `tel-*`, sha `abc1234`) — DO NOT use it for analysis. Real data = Docker volume only.
+  ⚠️ The repo-local `data/qayaba.db` is POLLUTED with test fixtures (apps `tel-*`, sha `abc1234`) — DO NOT use it for analysis. Real data = Docker volume only.
 - Green gate: `npm test` (900+ tests, tsx) + `npm run typecheck`. Both MUST stay green. Typecheck was green at baseline this session.
 - `node_modules` in the worktree is a symlink to the parent checkout's `node_modules`.
 
@@ -33,7 +33,7 @@ A fresh session can resume exactly by reading this section + the engram observat
 
 ## 1. The problem
 
-panchito is an app-agnostic AI E2E test generator: an LLM agent writes Playwright specs into a watched repo's `e2e/`; the deterministic orchestrator (`src/`) runs them against a live DEV site and opens a PR (green) or Issue (red). The user has iterated for weeks on `petclinic` (a Spring microservices app); every run produces failing/useless tests after a long (~30 min) expensive cycle. Each "fix" patches a symptom and a new symptom appears elsewhere.
+qayaba is an app-agnostic AI E2E test generator: an LLM agent writes Playwright specs into a watched repo's `e2e/`; the deterministic orchestrator (`src/`) runs them against a live DEV site and opens a PR (green) or Issue (red). The user has iterated for weeks on `petclinic` (a Spring microservices app); every run produces failing/useless tests after a long (~30 min) expensive cycle. Each "fix" patches a symptom and a new symptom appears elsewhere.
 
 This is the systematic-debugging signature of **wrong architecture, not wrong fix** (3+ fixes, each revealing a new problem elsewhere).
 

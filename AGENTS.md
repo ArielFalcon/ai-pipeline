@@ -2,7 +2,7 @@
 
 ## What this is
 
-`panchito` is an **app-agnostic, centralized AI-assisted E2E QA engine**. It watches team repos; when a commit is deployed to DEV, an AI agent (OpenCode and/or Codex) generates Playwright E2E tests for the blast radius, runs them against the live DEV site, and — when green + reviewer-approved — commits them into the app repo's `e2e/` folder via a PR with auto-merge. Failures open a GitHub Issue.
+`qayaba` is an **app-agnostic, centralized AI-assisted E2E QA engine**. It watches team repos; when a commit is deployed to DEV, an AI agent (OpenCode and/or Codex) generates Playwright E2E tests for the blast radius, runs them against the live DEV site, and — when green + reviewer-approved — commits them into the app repo's `e2e/` folder via a PR with auto-merge. Failures open a GitHub Issue.
 
 **Priority: stable, reliable, deterministic > features.** The hardest problem is trust — see [the value/trust risk](#the-valuetrust-risk).
 
@@ -110,7 +110,7 @@ The quality loop is circular: one LLM generates, another reviews, and the harnes
 
 ## Current state
 
-Several apps are wired in `config/apps/` across the current **Java + JavaScript/TypeScript** scope — interchangeable test targets, never design inputs: `jhipster-store`, `petclinic` and `portfolio` run in **e2e** mode against live DEV in **shadow mode**; `panchito` runs in **code** mode (`code: true`). The deploy gate is skipped wherever no `versionUrl` is configured. engram is enabled for persistent agent memory across runs.
+Several apps are wired in `config/apps/` across the current **Java + JavaScript/TypeScript** scope — interchangeable test targets, never design inputs: `jhipster-store`, `petclinic` and `portfolio` run in **e2e** mode against live DEV in **shadow mode**; `qayaba` runs in **code** mode (`code: true`). The deploy gate is skipped wherever no `versionUrl` is configured. engram is enabled for persistent agent memory across runs.
 
 The `src/` → `qa-engine/` migration is **complete**: new engine logic targets `qa-engine/`; `src/` is the declared shell (composition root, control plane, provider I/O, persistence). `qa-engine` never imports `src/` (`npm run arch:check`).
 

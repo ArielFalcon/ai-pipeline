@@ -822,7 +822,7 @@ test("buildProduction(rewritten) degrades structuralSignal to no section when th
     mode: "diff",
     codebaseMemory: {
       // No matching project for this repoDir — mirrors the real `list_projects` response for an
-      // unindexed watched app (verified empirically: panchito itself returns no match today).
+      // unindexed watched app (verified empirically: qayaba itself returns no match today).
       cli: async (tool: string) => {
         if (tool === "list_projects") return { code: 0, stdout: JSON.stringify({ projects: [{ name: "some-other-app", root_path: "/mirrors/some/other" }] }), stderr: "" };
         return { code: 0, stdout: JSON.stringify({ columns: [], rows: [], total: 0 }), stderr: "" };

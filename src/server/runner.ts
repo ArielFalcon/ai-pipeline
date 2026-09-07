@@ -123,7 +123,7 @@ export interface RunnerDeps {
   engineFactory?: (
     appConfig: AppConfig,
     namespace: string,
-    run: { mode: RunMode; guidance?: string; triggerRepo?: string },
+    run: { mode: RunMode; target?: TestTarget; guidance?: string; triggerRepo?: string },
     observer?: ObserverPort,
     previousNamespace?: string,
   ) => RunPipelinePort;
@@ -489,10 +489,13 @@ export function enqueueTrackedRun(queue: JobQueue, req: RunRequest, deps: Runner
         // learned a run was cross-repo and stayed hardwired to the PRIMARY repo (see
         // rewritten-engine-factory.ts's own header for the crash this caused). Same conditional-spread
         // style as guidance: absent on an ordinary run, never fabricated.
+        // Per-run target (CLI --target / TUI `t`): YAML `code: true` is only the default when the
+        // request omits target. The factory previously derived isCode solely from app.code, so a
+        // --target code run on an e2e-configured app still composed Playwright against DEV.
         deps.engineFactory(
           appConfig,
           runNamespace,
-          { mode: req.mode, ...(req.guidance ? { guidance: req.guidance } : {}), ...(req.triggerRepo ? { triggerRepo: req.triggerRepo } : {}) },
+          { mode: req.mode, target: req.target, ...(req.guidance ? { guidance: req.guidance } : {}), ...(req.triggerRepo ? { triggerRepo: req.triggerRepo } : {}) },
           observer,
           previousNamespace,
         ),

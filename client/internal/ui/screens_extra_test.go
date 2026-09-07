@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ArielFalcon/panchito/internal/contract"
-	"github.com/ArielFalcon/panchito/internal/events"
+	"github.com/ArielFalcon/qayaba/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/events"
 )
 
 // The live body must carry the one-line "what's happening now" status (the horizontal

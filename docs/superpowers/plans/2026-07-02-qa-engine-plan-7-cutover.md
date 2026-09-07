@@ -148,7 +148,7 @@ test("run() honors an already-aborted signal — no execution, no publish", asyn
 2. Flip the `PIPELINE_ENGINE` default from `legacy` to `rewritten` in `selectEngine` (`pipeline-engine-flag.ts`) — the ONE behavior-changing line, justified by 7.5 evidence.
 3. Soak: run production (or a staging window) on the rewritten default; watch for regressions.
 4. Delete legacy: `src/pipeline.ts` + the legacy QA modules it owns, `LegacyPipelineAdapter` + its tests, and the now-dead `runPipeline` wiring. Remove the parity harness's dependency on `src/` (or retire the parity nets whose legacy side no longer exists).
-5. Rename to `panchito` (the product name) per the original Plan 7 intent, if still desired.
+5. Rename to `qayaba` (the product name) per the original Plan 7 intent, if still desired.
 6. Remove the tsconfig `exclude` entries that only existed to keep `src/`-importing files out of scope.
 
 **Files:** `src/index.ts`, `src/cli.ts`, `qa-engine/.../pipeline-engine-flag.ts`, then deletion of `src/pipeline.ts` + legacy modules + `legacy-pipeline.adapter.ts` + parity harness reconciliation, `package.json` scripts (`qa`/`start` → qa-engine entrypoints).

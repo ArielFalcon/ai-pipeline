@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ArielFalcon/panchito/internal/api"
-	"github.com/ArielFalcon/panchito/internal/auth"
-	"github.com/ArielFalcon/panchito/internal/store"
+	"github.com/ArielFalcon/qayaba/internal/api"
+	"github.com/ArielFalcon/qayaba/internal/auth"
+	"github.com/ArielFalcon/qayaba/internal/store"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -540,7 +540,7 @@ func diagnoseLoginError(host string, err error) string {
 }
 
 // diagnoseConnectError turns a raw connect failure into operator-actionable guidance: a host
-// that answered but is not a panchito control plane (the classic "pointed at the app's port,
+// that answered but is not a qayaba control plane (the classic "pointed at the app's port,
 // not the orchestrator"), an auth failure, or an unreachable host.
 func diagnoseConnectError(host string, err error, handshake bool) string {
 	var apiErr *api.APIError
@@ -548,10 +548,10 @@ func diagnoseConnectError(host string, err error, handshake bool) string {
 		switch apiErr.Status {
 		case http.StatusNotFound:
 			if handshake {
-				return host + " answered, but it is not a panchito control plane (404 at /api/v1/version).\nThis is usually a watched app's port, not the orchestrator — check the host/port."
+				return host + " answered, but it is not a qayaba control plane (404 at /api/v1/version).\nThis is usually a watched app's port, not the orchestrator — check the host/port."
 			}
-			// The handshake already succeeded, so the server IS panchito — a 404 here is a
-			// missing/mismatched route, not the wrong host.
+// The handshake already succeeded, so the server IS qayaba — a 404 here is a
+// missing/mismatched route, not the wrong host.
 			return host + " accepted the handshake but returned 404 for /api/v1/apps — the server looks like an incomplete or mismatched build."
 		case http.StatusUnauthorized, http.StatusForbidden:
 			return "auth failed for " + host + " — the token or session was rejected. Sign in again (enter) or use a token (^T)."
@@ -583,12 +583,12 @@ func connectCmd(host, token string) tea.Cmd {
 				msg = *info.Message
 			}
 			if msg == "" {
-				msg = fmt.Sprintf("update panchito: server %s requires client >= %s", info.ServerVersion, info.MinClientVersion)
+				msg = fmt.Sprintf("update qayaba: server %s requires client >= %s", info.ServerVersion, info.MinClientVersion)
 			}
 			return errMsg{errors.New(msg)}
 		}
 		if info.ApiVersion != "" && info.ApiVersion != "v1" {
-			return errMsg{fmt.Errorf("update panchito: server speaks API %s, this client speaks v1", info.ApiVersion)}
+			return errMsg{fmt.Errorf("update qayaba: server speaks API %s, this client speaks v1", info.ApiVersion)}
 		}
 
 		lctx, lcancel := context.WithTimeout(context.Background(), 8*time.Second)

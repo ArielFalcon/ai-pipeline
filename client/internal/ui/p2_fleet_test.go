@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ArielFalcon/panchito/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/contract"
 )
 
 // P2-1: the focused selection reveals its secondary actions inline (progressive disclosure),
@@ -36,7 +36,7 @@ func TestFleetUnselectedRowsHideActionDrawer(t *testing.T) {
 
 // P2-4: a project with no run history reads as "no runs yet", not a bare, cryptic "—".
 func TestFleetNoRunsShowsLegibleEmptyState(t *testing.T) {
-	m := dashWith([]contract.AppView{{Name: "panchito"}})
+	m := dashWith([]contract.AppView{{Name: "qayaba"}})
 	m.focus = focusModels // not focused on fleet → no caret/drawer noise
 
 	out := m.renderFleet(90)

@@ -1,4 +1,4 @@
-# panchito
+# qayaba
 <div align="center">
 
 [![Node.js 22+](https://img.shields.io/badge/node-22%2B-brightgreen)](https://nodejs.org)
@@ -38,7 +38,7 @@ It is app-agnostic: onboard any repo by adding a single YAML file. No app code l
 
 ## 1. Overview
 
-panchito turns every deploy into a QA checkpoint, automatically.
+qayaba turns every deploy into a QA checkpoint, automatically.
 
 | Capability | What it means |
 |---|---|
@@ -93,7 +93,7 @@ Receives webhooks, manages the sequential queue, clones repos, runs Playwright a
 ### Agent Runtime
 **OpenCode, Codex, or dual mode** behind one provider-neutral facade.
 
-The primary agent reads code via Serena (semantic LSP navigation) and writes Playwright specs. The reviewer independently judges quality. Engram provides persistent episodic memory across runs. `panchito agent` or the Dashboard's Agent Runtime screen selects provider, role assignments, models, and API keys.
+The primary agent reads code via Serena (semantic LSP navigation) and writes Playwright specs. The reviewer independently judges quality. Engram provides persistent episodic memory across runs. `qayaba agent` or the Dashboard's Agent Runtime screen selects provider, role assignments, models, and API keys.
 
 </td>
 </tr>
@@ -132,7 +132,7 @@ Every run follows the same sequence, whether triggered by a webhook or manually:
 
 ### The learning layer
 
-Beyond deciding pass/fail, panchito learns from every run to improve future ones:
+Beyond deciding pass/fail, qayaba learns from every run to improve future ones:
 
 | Component | What it does |
 |---|---|
@@ -193,7 +193,7 @@ Four layers prevent low-quality tests from entering the suite:
 
 ```bash
 git clone <this-repo>
-cd panchito
+cd qayaba
 npm install
 npm test           # unit tests (network and AI calls are stubbed)
 npm run typecheck  # strict TypeScript validation
@@ -218,7 +218,7 @@ CODEX_API_KEY=sk-your-key-here
 
 ### AI model configuration
 
-The project uses provider-neutral role assignments. Configure them from the Dashboard's **Agent Runtime** view or with `panchito agent`.
+The project uses provider-neutral role assignments. Configure them from the Dashboard's **Agent Runtime** view or with `qayaba agent`.
 
 | Role | Default provider/model | Purpose |
 |---|---|---|
@@ -227,14 +227,14 @@ The project uses provider-neutral role assignments. Configure them from the Dash
 | `chat` | `opencode-go/deepseek-v4-flash` | Read-only operator assistant |
 
 > [!TIP]
-> `panchito --opencode`, `panchito --codex`, and `panchito --dual` select the runtime before a command. `panchito agent` opens the runtime editor; `panchito agent status` prints the current config.
+> `qayaba --opencode`, `qayaba --codex`, and `qayaba --dual` select the runtime before a command. `qayaba agent` opens the runtime editor; `qayaba agent status` prints the current config.
 
 **What you must configure manually:**
 
 | Item | Where | Required |
 |---|---|---|
 | Provider key | `.env` as `OPENCODE_API_KEY` or `CODEX_API_KEY` | One key for single mode; both for dual |
-| Runtime mode/provider | Dashboard Agent Runtime, `panchito agent`, or `AGENT_*` env vars | Only if defaults are not desired |
+| Runtime mode/provider | Dashboard Agent Runtime, `qayaba agent`, or `AGENT_*` env vars | Only if defaults are not desired |
 | Model IDs | Dashboard Agent Runtime or `AGENT_PRIMARY_MODEL`/`AGENT_REVIEWER_MODEL`/`AGENT_CHAT_MODEL` | Only if the defaults are unavailable |
 | GitHub token | `.env` as `GITHUB_TOKEN` | Yes, for PR and Issue creation |
 | Webhook secret | `.env` as `WEBHOOK_SECRET` | Yes, for production webhook validation |
@@ -250,13 +250,13 @@ The project uses provider-neutral role assignments. Configure them from the Dash
 | Quality review criteria | `agent/skills/test-value-review/` | False-positive pattern catalog |
 | MCP servers (Serena, Engram, Playwright) | `agents/opencode.json` and agent container | Code navigation + persistent memory |
 | Docker images | `Dockerfile`, `agents/Dockerfile` | Both services build from these |
-| Control-plane API token | `config/.api_token` (auto-generated on first boot) | The machine credential — protects the API (`Bearer` auth on every non-public route). On the same machine the `panchito` console auto-loads it from `$QA_API_TOKEN` or this file; people sign in with GitHub instead (see below). Set `QA_API_TOKEN` to pin your own. |
+| Control-plane API token | `config/.api_token` (auto-generated on first boot) | The machine credential — protects the API (`Bearer` auth on every non-public route). On the same machine the `qayaba` console auto-loads it from `$QA_API_TOKEN` or this file; people sign in with GitHub instead (see below). Set `QA_API_TOKEN` to pin your own. |
 
 </details>
 
 ### Signing in to the console
 
-The `panchito` console reaches the orchestrator over its HTTP control plane, which is `Bearer`-authenticated. There are two ways to authenticate, for two different callers:
+The `qayaba` console reaches the orchestrator over its HTTP control plane, which is `Bearer`-authenticated. There are two ways to authenticate, for two different callers:
 
 - **People → "Log in with GitHub" (default).** On the connect screen, press <kbd>enter</kbd>. The console runs GitHub's OAuth **device flow**: it shows a short code, opens `github.com/login/device`, and you approve *this terminal* with your own GitHub account — nothing to copy or paste. The orchestrator checks that you are a **collaborator with push access on a watched repo**, then issues a short-lived session. No shared secret ever touches a person's machine.
 - **Machines / CI → a static token.** Press <kbd>^T</kbd> on the connect screen to paste the control-plane token, or export `QA_API_TOKEN`. On the orchestrator's own host the console auto-discovers `config/.api_token`, so a local operator never types anything.
@@ -273,7 +273,7 @@ GitHub login needs a **GitHub OAuth App** with the device flow enabled. The app'
    GITHUB_OAUTH_CLIENT_ID=Iv1.your_client_id
    ```
 
-   Any `panchito` console that connects now offers "Log in with GitHub" — nothing to install client-side. (A client may still override with `PANCHITO_GITHUB_CLIENT_ID`, or bake a fallback in at build time with `-ldflags "-X github.com/ArielFalcon/panchito/internal/auth.BakedClientID=Iv1.…"`, but neither is required.)
+   Any `qayaba` console that connects now offers "Log in with GitHub" — nothing to install client-side. (A client may still override with `QAYABA_GITHUB_CLIENT_ID`, or bake a fallback in at build time with `-ldflags "-X github.com/ArielFalcon/qayaba/internal/auth.BakedClientID=Iv1.…"`, but neither is required.)
 
 3. Other server-side session settings (all optional):
 

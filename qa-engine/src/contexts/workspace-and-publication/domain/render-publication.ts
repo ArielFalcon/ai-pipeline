@@ -177,7 +177,7 @@ export interface RenderPrBodyInput {
 export function renderPrBody(input: RenderPrBodyInput): string {
   const what = input.isCode ? "Source-code tests" : "E2E tests";
   const shaText = input.sha ? ` for \`${input.sha}\`` : "";
-  const blocks: string[] = ["## What this PR adds", `${what} generated/updated by panchito${shaText}.`];
+  const blocks: string[] = ["## What this PR adds", `${what} generated/updated by qayaba${shaText}.`];
 
   const covered = (input.tested ?? []).filter((t) => t.flow || t.objective).slice(0, MAX_ITEMS);
   if (covered.length) {

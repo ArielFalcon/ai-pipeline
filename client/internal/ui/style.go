@@ -293,7 +293,7 @@ func padRight(s string, n int) string {
 // connect screen. Width is clamped so it never outgrows a narrow terminal.
 func bannerBox(width int) string {
 	bw := min(48, width)
-	inner := renderSegs("", sg("◆ ", colEmber), sgb("panchito", colFg)) + "\n" +
+	inner := renderSegs("", sg("◆ ", colEmber), sgb("qayaba", colFg)) + "\n" +
 		labelStyle.Render("autonomous e2e qa for every deploy")
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).

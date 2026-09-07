@@ -13,21 +13,21 @@ test("toIntelligenceView projects rules, scorecard and curriculum", () => {
     },
   ] as never;
   const scorecard = {
-    app: "panchito", updatedAt: "2026-01-02",
+    app: "qayaba", updatedAt: "2026-01-02",
     entries: [
-      { runId: "x", app: "panchito", sha: "s", target: "code", valueScore: 0.82, mutantCount: 50, killedCount: 41, at: "2026-01-02" },
+      { runId: "x", app: "qayaba", sha: "s", target: "code", valueScore: 0.82, mutantCount: 50, killedCount: 41, at: "2026-01-02" },
     ],
     summary: { totalRuns: 1, measuredRuns: 1, avgValueScore: 0.82, lastValueScore: 0.82 },
   } as never;
   const curriculum = {
-    app: "panchito", updatedAt: "2026-01-02",
+    app: "qayaba", updatedAt: "2026-01-02",
     archetypes: [
       { archetype: "happy-path", caughtRealBug: true, firstCaughtAt: "2026-01-01", promotionCount: 2, lastPromoted: "2026-01-02" },
     ],
   } as never;
 
-  const view = toIntelligenceView("panchito", rules, scorecard, curriculum);
-  assert.equal(view.app, "panchito");
+  const view = toIntelligenceView("qayaba", rules, scorecard, curriculum);
+  assert.equal(view.app, "qayaba");
   assert.equal(view.rules.length, 1);
   assert.equal(view.rules[0]!.confidence, "high");
   assert.equal(view.rules[0]!.successRate, 0.86);

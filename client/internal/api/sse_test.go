@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/ArielFalcon/panchito/internal/events"
+	"github.com/ArielFalcon/qayaba/internal/events"
 )
 
 func TestStreamRunEventsDecodesAndForwardsLastEventID(t *testing.T) {

@@ -1,4 +1,4 @@
-# panchito — Motor de QA E2E autónomo y agnóstico
+# qayaba — Motor de QA E2E autónomo y agnóstico
 
 > **En una oración:** un servicio centralizado que observa los repositorios de tu equipo, genera tests de extremo a extremo para cada cambio desplegado, los ejecuta contra el entorno de desarrollo y, cuando son válidos, los integra de vuelta al repositorio de la aplicación como una suite que crece y aprende con cada despliegue.
 

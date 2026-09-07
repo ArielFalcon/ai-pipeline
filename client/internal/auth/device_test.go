@@ -132,12 +132,12 @@ func TestPollTerminalStates(t *testing.T) {
 
 // ResolveClientID priority: env override > server-advertised > baked-in build value.
 func TestResolveClientIDPriority(t *testing.T) {
-	t.Setenv("PANCHITO_GITHUB_CLIENT_ID", "env-cid")
+	t.Setenv("QAYABA_GITHUB_CLIENT_ID", "env-cid")
 	if got := ResolveClientID("server-cid"); got != "env-cid" {
 		t.Fatalf("env should win; ResolveClientID = %q, want env-cid", got)
 	}
 
-	t.Setenv("PANCHITO_GITHUB_CLIENT_ID", "")
+	t.Setenv("QAYABA_GITHUB_CLIENT_ID", "")
 	if got := ResolveClientID("server-cid"); got != "server-cid" {
 		t.Fatalf("server-advertised should be used when no env; got %q, want server-cid", got)
 	}

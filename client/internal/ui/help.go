@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ArielFalcon/panchito/internal/api"
-	"github.com/ArielFalcon/panchito/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/api"
+	"github.com/ArielFalcon/qayaba/internal/contract"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -33,7 +33,7 @@ type helpModel struct {
 
 func newHelpModel(client *api.Client) helpModel {
 	ti := textinput.New()
-	ti.Placeholder = "ask about panchito…"
+	ti.Placeholder = "ask about qayaba…"
 	ti.Prompt = "" // the screen draws its own ember caret
 	ti.CharLimit = 300
 	ti.Width = 50
@@ -115,7 +115,7 @@ func (m helpModel) Update(msg tea.Msg) (helpModel, tea.Cmd) {
 func (m helpModel) conversation(w int) string {
 	var b strings.Builder
 	if len(m.entries) == 0 {
-		b.WriteString(hintStyle.Render("panchito drives autonomous E2E QA: pick a project, choose a target and mode,") + "\n")
+		b.WriteString(hintStyle.Render("qayaba drives autonomous E2E QA: pick a project, choose a target and mode,") + "\n")
 		b.WriteString(hintStyle.Render("and watch the agent generate, run and review Playwright tests against DEV.") + "\n\n")
 		b.WriteString(labelStyle.Render("modes  ") + hintStyle.Render("diff · complete · exhaustive · manual · context") + "\n")
 		b.WriteString(labelStyle.Render("shadow ") + hintStyle.Render("runs the full pipeline but publishes nothing — safe to demo") + "\n")
@@ -140,7 +140,7 @@ func (m helpModel) conversation(w int) string {
 
 func (m helpModel) View() string {
 	w := contentWidth(m.width)
-	header := accentRule(w, "panchito help", "")
+	header := accentRule(w, "qayaba help", "")
 	input := renderSegs("", sg("› ", colEmber)) + m.input.View()
 	hint := hintStyle.Render("↑↓ scroll · enter ask · esc back · ctrl+c quit")
 	body := m.conversation(w)

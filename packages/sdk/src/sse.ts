@@ -1,5 +1,5 @@
 // Live run events over SSE. Uses fetch (not EventSource) so the Authorization header and
-// Last-Event-ID resume both work — mirroring panchito's Go client. Reconnects with capped
+// Last-Event-ID resume both work — mirroring qayaba's Go client. Reconnects with capped
 // backoff until the terminal run.verdict event or the caller aborts, resuming from the last
 // seen seq so no event is dropped across a reconnect. A two-counter backstop (see the loop)
 // gives up on a finished-but-unreplayable run or a persistent server error without ever

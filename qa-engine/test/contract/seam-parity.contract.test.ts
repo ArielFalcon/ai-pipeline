@@ -376,8 +376,11 @@ describe("seam-parity: COMPOSITION (CompositionConfig vs buildRewrittenCompositi
   });
 
   test("buildRewrittenCompositionConfig leaves guidance/baseUrl/testIdAttribute/versionUrl/observer absent when the AppConfig/caller omits them (never fabricated)", () => {
+    // CODE-target run: dev.baseUrl is conceptually absent for code mode (no live DEV URL), so this
+    // app config is legal and the factory must NOT throw the new composition-time baseUrl guard.
+    // Any e2e-target build must still declare dev.baseUrl — see the guard's own test.
     const cfg = buildRewrittenCompositionConfig(
-      fakeAppConfig({ dev: undefined, e2e: undefined } as Partial<AppConfig>),
+      fakeAppConfig({ dev: undefined, e2e: undefined, code: true } as Partial<AppConfig>),
       fakeFactoryDeps(),
       S("namespace"),
       { mode: "diff" },
@@ -388,5 +391,20 @@ describe("seam-parity: COMPOSITION (CompositionConfig vs buildRewrittenCompositi
     assert.equal(cfg.versionUrl, undefined);
     assert.equal(cfg.versionPoll, undefined);
     assert.equal(cfg.observer, undefined);
+  });
+
+  // P2b demo guard: the composition-time baseUrl validation. An e2e-target run without dev.baseUrl
+  // is a config defect — the factory must throw at composition time (before any git clone/agent
+  // session/Playwright spawn is spent), not at E2eExecutionStrategy.run() deep inside the use-case.
+  test("buildRewrittenCompositionConfig throws when an e2e-target app omits dev.baseUrl (composition-time guard)", () => {
+    assert.throws(
+      () => buildRewrittenCompositionConfig(
+        fakeAppConfig({ dev: undefined } as Partial<AppConfig>),
+        fakeFactoryDeps(),
+        S("namespace"),
+        { mode: "diff" },
+      ),
+      /target "e2e" but no dev\.baseUrl/,
+    );
   });
 });

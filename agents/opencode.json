@@ -97,7 +97,7 @@
       "temperature": 0.1
     },
     "qa-maintainer": {
-      "description": "Self-maintenance agent for panchito itself. Diagnoses and fixes incidents; never touches watched app repos. Has serena+engram MCP access by design (no playwright — it never drives a browser).",
+      "description": "Self-maintenance agent for qayaba itself. Diagnoses and fixes incidents; never touches watched app repos. Has serena+engram MCP access by design (no playwright — it never drives a browser).",
       "mode": "primary",
       "model": "opencode-go/kimi-k2.7-code",
       "prompt": "{file:./agent/qa-maintainer.md}",

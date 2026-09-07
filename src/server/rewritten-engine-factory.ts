@@ -44,13 +44,12 @@
 //      uses at src/pipeline.ts:1222 — and passes it through RunnerDeps.engineFactory. A static
 //      branch here would collide every run of every app on the same live-DEV test-data namespace
 //      the moment PIPELINE_ENGINE=rewritten is set (fixed after judgment-day caught it).
-//   5. mode/guidance are caller-supplied PER RUN (audit-remediation fix, judgment-day): the operator
-//      template hardcodes a single mode for its one-shot comparison run; this factory's runner caller
-//      knows the REAL req.mode/req.guidance for every run (diff/complete/exhaustive/manual/context),
-//      so buildRewrittenCompositionConfig(app, deps, namespace, run) takes them as an explicit `run`
-//      argument instead of a static "diff" literal — a hardcode here silently mis-prompted every
-//      non-diff run's Generation/Review phase (composition-root.ts:187,199 feed cfg.mode/cfg.guidance
-//      straight into prompt assembly).
+//   5. mode/guidance/target are caller-supplied PER RUN (audit-remediation fix, judgment-day): the
+//      operator template hardcodes a single mode for its one-shot comparison run; this factory's
+//      runner caller knows the REAL req.mode/req.guidance/req.target for every run, so
+//      buildRewrittenCompositionConfig(app, deps, namespace, run) takes them as an explicit `run`
+//      argument instead of a static "diff" / yaml-only target — a hardcode here silently mis-prompted
+//      every non-diff run and composed Playwright for a `--target code` run on an e2e-configured app.
 //
 // ── SHELL SURVIVOR (migration-tier-4d, D-4d-1) ──────────────────────────────────────────────────
 // DECLARED a permanent shell survivor, not migration debt: this is the composition root mapping an
@@ -95,7 +94,7 @@ import type { RunPipelinePort, ObserverPort } from "@contexts/qa-run-orchestrati
 import { buildProduction, type CompositionConfig } from "@contexts/qa-run-orchestration/composition/composition-root";
 import { Sha, shaMatches } from "@kernel/sha";
 import type { AgentRole } from "@kernel/agent-role";
-import type { RunMode } from "@kernel/run-mode";
+import type { RunMode, TestTarget } from "@kernel/run-mode";
 
 import { GitMirrorReadAdapter } from "@contexts/change-analysis/infrastructure/git-mirror-read.adapter";
 import { GenerateTestsUseCase } from "@contexts/generation/application/generate-tests.use-case";
@@ -165,7 +164,7 @@ import type { RepairPort } from "@contexts/generation/application/generate-tests
 // migration-tier-4d Slice 1b (e2e-execution migration, the src->qa-engine migration program's
 // FINALE): src/qa/execute.ts is deleted; qa-engine now owns the real e2e-runner body directly
 // (e2e-execution.runner.ts). This factory is the ONLY place QA_E2E_TIMEOUT_MS/PW_ACTION_TIMEOUT_MS
-// are read from process.env and injected downward (exactly like CODE_SANDBOX*/PANCHITO_ROOT below)
+// are read from process.env and injected downward (exactly like CODE_SANDBOX*/QAYABA_ROOT below)
 // — see e2e-execution.runner.ts's own header for why.
 import {
   runE2E,
@@ -177,7 +176,7 @@ import {
 // migration-tier-4b Slice 1: code-execution migration — src/qa/code-runner.ts is deleted; qa-engine
 // now owns the real body directly (code-execution.runner.ts / code-setup.ts / sandbox.ts). This
 // factory is the ONLY place CODE_SANDBOX* is read from process.env and injected downward (exactly
-// like PANCHITO_ROOT/GITHUB_TOKEN below) — see sandbox.ts's own header for why.
+// like QAYABA_ROOT/GITHUB_TOKEN below) — see sandbox.ts's own header for why.
 import {
   runCodeTests,
   createDefaultCodeExecuteDeps,
@@ -314,8 +313,8 @@ type GitFn = (args: string[], cwd?: string) => Promise<string>;
 // ensureMirror/ensureMirrorAtBranch wrappers + resolveRef, legacy publish.ts:124
 // `[...authHeaderArgs(), "push", ...]`). Likewise a fresh mirror
 // has NO git identity configured anywhere (Dockerfile/compose/repo-mirror set none), which is why
-// legacy committed with `-c user.name=<GIT_AUTHOR_NAME ?? "panchito"> -c user.email=
-// <GIT_AUTHOR_EMAIL ?? "panchito@users.noreply.github.com">` (publish.ts:107-108,120-123). Without
+// legacy committed with `-c user.name=<GIT_AUTHOR_NAME ?? "qayaba"> -c user.email=
+// <GIT_AUTHOR_EMAIL ?? "qayaba@users.noreply.github.com">` (publish.ts:107-108,120-123). Without
 // these, every real pr-route push fails non-interactively and every fresh-mirror commit hard-fails
 // "Author identity unknown".
 //
@@ -331,8 +330,8 @@ function withPublishGitDecorations(git: GitFn): GitFn {
   return (args, cwd) => {
     if (args[0] === "push") return git([...authHeaderArgs(), ...args], cwd);
     if (args[0] === "commit") {
-      const name = process.env.GIT_AUTHOR_NAME ?? "panchito";
-      const email = process.env.GIT_AUTHOR_EMAIL ?? "panchito@users.noreply.github.com";
+      const name = process.env.GIT_AUTHOR_NAME ?? "qayaba";
+      const email = process.env.GIT_AUTHOR_EMAIL ?? "qayaba@users.noreply.github.com";
       return git(["-c", `user.name=${name}`, "-c", `user.email=${email}`, ...args], cwd);
     }
     return git(args, cwd);
@@ -458,7 +457,7 @@ export function githubHttpDeps(fetchFn: typeof fetch = fetch): GitHubHttpDeps {
 // setupE2eProject/defaultSetupDeps). `fs` is qa-engine's own nodeFsDeps (real node:fs, src-free);
 // `runner` is the SAME SandboxedBinaryRunnerAdapter+ProcessKillAdapter pairing this factory already
 // constructs for the mutation oracle below; `seedDir` inlines src/qa/setup.ts's old seedDir()
-// formula (PANCHITO_ROOT env, defaulting to cwd) — this is the ONLY place that env is read for e2e
+// formula (QAYABA_ROOT env, defaulting to cwd) — this is the ONLY place that env is read for e2e
 // setup, matching the env-agnostic-adapter invariant every other injected secret/path in this file
 // follows (mirrors mirrorRoot's own workdirRoot() precedent immediately below). Exported for direct
 // unit testing (same precedent as buildVcsPublish/buildConfinement/buildMirrorGc/githubHttpDeps above).
@@ -466,7 +465,7 @@ export function buildSetupAdapter(): SetupAdapter {
   return new SetupAdapter({
     fs: nodeFsDeps,
     runner: new SandboxedBinaryRunnerAdapter({ processKill: new ProcessKillAdapter() }),
-    seedDir: join(process.env.PANCHITO_ROOT ?? process.cwd(), "config", "e2e"),
+    seedDir: join(process.env.QAYABA_ROOT ?? process.cwd(), "config", "e2e"),
   });
 }
 
@@ -689,11 +688,12 @@ export interface RewrittenEngineFactoryDeps {
 // test-data scoping AND the publish branch. A caller MUST pass a fresh namespace per run; passing
 // the same value twice reproduces the exact DEV-data collision this fix closes.
 //
-// `run` (audit fix, judgment-day): mode/guidance are PER-RUN values, not app-static — the runner
-// knows req.mode/req.guidance at call time (mirrors the namespace precedent above). Mode feeds
-// GenerationPortAdapter's/ReviewPortAdapter's own prompt assembly (composition-root.ts:187,199), so
-// a hardcoded "diff" here silently mis-prompted every non-diff run (complete/exhaustive/manual/
-// context) as if it were a diff run.
+// `run` (audit fix, judgment-day): mode/guidance/target are PER-RUN values, not app-static — the
+// runner knows req.mode/req.guidance/req.target at call time (mirrors the namespace precedent above).
+// Mode feeds GenerationPortAdapter's/ReviewPortAdapter's own prompt assembly (composition-root.ts:187,199),
+// so a hardcoded "diff" here silently mis-prompted every non-diff run (complete/exhaustive/manual/
+// context) as if it were a diff run. Target is the same seam: YAML `code: true` is only the default
+// when `run.target` is omitted; a CLI `--target` / TUI `t` override must compose that pipeline.
 //
 // `run.triggerRepo` (bug fix — cross-repo composition threading): the SAME per-run value the
 // runner already threads onto RunInput.triggerRepo for coverage-unknown/issue-routing/
@@ -706,15 +706,24 @@ export function buildRewrittenCompositionConfig(
   app: AppConfig,
   deps: RewrittenEngineFactoryDeps,
   namespace: string,
-  run: { mode: RunMode; guidance?: string; triggerRepo?: string },
+  run: { mode: RunMode; target?: TestTarget; guidance?: string; triggerRepo?: string },
   // Bug fix: the PER-RUN ObserverPort (src/server/runner.ts's buildRewrittenObserver) — threaded
   // straight into CompositionConfig.observer so wireBridges() wires it into RunQaUseCaseDeps.
   // Optional: a caller that omits it (e.g. a unit test building a config directly) keeps every
   // onStep() call in RunQaUseCase a no-op, exactly the pre-fix behavior.
   observer?: ObserverPort,
 ): CompositionConfig {
-  const isCode = app.code === true;
-  const target: "e2e" | "code" = isCode ? "code" : "e2e";
+  const target: TestTarget = run.target ?? (app.code === true ? "code" : "e2e");
+  const isCode = target === "code";
+  // Composition-time config validation (demo-killer guard): an e2e-target run without a live DEV
+  // URL can NEVER be composed — fail loud HERE, before any git clone/agent session/Playwright
+  // spawn is spent. Previously the defect surfaced at E2eExecutionStrategy.run() deep inside the
+  // use-case with a mislabeled plain-Error; now it throws an explicit config error up front.
+  if (!isCode && !app.dev?.baseUrl) {
+    throw new Error(
+      `App "${app.name}" has target "e2e" but no dev.baseUrl configured — set dev.baseUrl in config/apps/${app.name}.yaml or run with --target code.`,
+    );
+  }
   const e2eRelDir = "e2e";
   // sdd/migration-remediation Slice 6 (D-P2, RedactionPort unification): the ONE canonical
   // redaction collaborator for both egress boundaries this factory wires (logs → Issue via
@@ -1178,7 +1187,7 @@ export function buildRewrittenCompositionConfig(
             mirrorRoot, // the SAME local already computed above (deps.mirrorRoot ?? workdirRoot())
             services: app.services.map((s) => ({ repo: s.repo })),
             boundaryProfiles: new YamlBoundaryProfileAdapter((name) =>
-              expandEnv(readFileSync(join(process.env.PANCHITO_ROOT ?? process.cwd(), "config", "apps", `${name}.yaml`), "utf8"))),
+              expandEnv(readFileSync(join(process.env.QAYABA_ROOT ?? process.cwd(), "config", "apps", `${name}.yaml`), "utf8"))),
           },
         }
       : {}),
@@ -1447,7 +1456,7 @@ export function buildRewrittenCompositionConfig(
 // stays stateless: no namespace is cached or defaulted internally, so two calls with two different
 // namespaces always compose two independent CompositionConfigs with two different `branch` values.
 //
-// The `run` parameter (audit fix, judgment-day) carries the PER-RUN mode/guidance — see
+// The `run` parameter (audit fix, judgment-day) carries the PER-RUN mode/guidance/target — see
 // buildRewrittenCompositionConfig's own header. Same statelessness contract: nothing here is
 // cached, so two calls with two different `run` values compose two independent configs.
 //
@@ -1486,7 +1495,7 @@ export function buildRewrittenCompositionConfig(
 // tests already pin.
 export function createRewrittenEngineFactory(
   deps: RewrittenEngineFactoryDeps,
-): (appConfig: AppConfig, namespace: string, run: { mode: RunMode; guidance?: string; triggerRepo?: string }, observer?: ObserverPort, previousNamespace?: string) => RunPipelinePort {
+): (appConfig: AppConfig, namespace: string, run: { mode: RunMode; target?: TestTarget; guidance?: string; triggerRepo?: string }, observer?: ObserverPort, previousNamespace?: string) => RunPipelinePort {
   const env = deps.env ?? process.env;
   const wrappedDeps: RewrittenEngineFactoryDeps = {
     ...deps,
@@ -1498,7 +1507,7 @@ export function createRewrittenEngineFactory(
         ),
       ),
   };
-  return (appConfig: AppConfig, namespace: string, run: { mode: RunMode; guidance?: string; triggerRepo?: string }, observer?: ObserverPort): RunPipelinePort => {
+  return (appConfig: AppConfig, namespace: string, run: { mode: RunMode; target?: TestTarget; guidance?: string; triggerRepo?: string }, observer?: ObserverPort): RunPipelinePort => {
     const cfg = buildRewrittenCompositionConfig(appConfig, wrappedDeps, namespace, run, observer);
     return buildProduction(env, cfg);
   };

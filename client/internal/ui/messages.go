@@ -1,10 +1,10 @@
 package ui
 
 import (
-	"github.com/ArielFalcon/panchito/internal/api"
-	"github.com/ArielFalcon/panchito/internal/auth"
-	"github.com/ArielFalcon/panchito/internal/contract"
-	"github.com/ArielFalcon/panchito/internal/events"
+	"github.com/ArielFalcon/qayaba/internal/api"
+	"github.com/ArielFalcon/qayaba/internal/auth"
+	"github.com/ArielFalcon/qayaba/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/events"
 )
 
 // ── Navigation / lifecycle messages (sub-model → root) ────────────────────────

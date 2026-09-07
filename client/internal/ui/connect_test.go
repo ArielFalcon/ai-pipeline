@@ -5,19 +5,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ArielFalcon/panchito/internal/api"
-	"github.com/ArielFalcon/panchito/internal/auth"
-	"github.com/ArielFalcon/panchito/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/api"
+	"github.com/ArielFalcon/qayaba/internal/auth"
+	"github.com/ArielFalcon/qayaba/internal/contract"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// A 404 on the HANDSHAKE means the host answered but is not a panchito control plane — the
+// A 404 on the HANDSHAKE means the host answered but is not a qayaba control plane — the
 // classic "pointed at the app's port, not the orchestrator".
 func TestDiagnoseHandshake404IsWrongServer(t *testing.T) {
 	got := diagnoseConnectError("localhost:8080", &api.APIError{Status: 404, Msg: "Not Found"}, true)
 	low := strings.ToLower(got)
-	if !strings.Contains(low, "not a panchito") {
-		t.Fatalf("a handshake 404 should say it is not a panchito control plane; got %q", got)
+	if !strings.Contains(low, "not a qayaba") {
+		t.Fatalf("a handshake 404 should say it is not a qayaba control plane; got %q", got)
 	}
 	if !strings.Contains(low, "port") {
 		t.Fatalf("a handshake 404 should hint at the host/port; got %q", got)
@@ -28,11 +28,11 @@ func TestDiagnoseHandshake404IsWrongServer(t *testing.T) {
 }
 
 // A 404 AFTER a successful handshake is NOT "wrong server" — the handshake already proved the
-// server is panchito; saying "not a panchito control plane" here would misdirect the operator.
+// server is qayaba; saying "not a qayaba control plane" here would misdirect the operator.
 func TestDiagnoseProbe404IsNotWrongServer(t *testing.T) {
 	got := diagnoseConnectError("localhost:8088", &api.APIError{Status: 404, Msg: "Not Found"}, false)
-	if strings.Contains(strings.ToLower(got), "not a panchito") {
-		t.Fatalf("a post-handshake 404 must NOT claim the server is not panchito; got %q", got)
+	if strings.Contains(strings.ToLower(got), "not a qayaba") {
+		t.Fatalf("a post-handshake 404 must NOT claim the server is not qayaba; got %q", got)
 	}
 }
 
@@ -148,7 +148,7 @@ func TestConnectViewShowsDiagnosisAndForget(t *testing.T) {
 
 	out := strings.ToLower(m.View())
 
-	if !strings.Contains(out, "not a panchito") {
+	if !strings.Contains(out, "not a qayaba") {
 		t.Fatalf("the view should surface the diagnosis; got:\n%s", out)
 	}
 	if !strings.Contains(out, "forget") {

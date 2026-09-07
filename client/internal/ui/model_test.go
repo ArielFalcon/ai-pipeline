@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ArielFalcon/panchito/internal/api"
-	"github.com/ArielFalcon/panchito/internal/contract"
-	"github.com/ArielFalcon/panchito/internal/events"
+	"github.com/ArielFalcon/qayaba/internal/api"
+	"github.com/ArielFalcon/qayaba/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/events"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -291,7 +291,7 @@ func TestSummarySurfacesInfraErrorNote(t *testing.T) {
 // A code/context run carries no Playwright test list, so the recap's substance is the
 // files it wrote and commands it ran — these must be listed BY NAME, not as bare counts.
 func TestSummaryListsWrittenFilesByNameForCodeRun(t *testing.T) {
-	m := newLiveModel("r", "panchito", make(chan events.RunEvent, 1), func() {}, 0, 0)
+	m := newLiveModel("r", "qayaba", make(chan events.RunEvent, 1), func() {}, 0, 0)
 	for _, ev := range []events.RunEvent{
 		{Type: "run.started", Body: events.RunStarted{Sha: "abc", Target: "code", Mode: "context"}},
 		{Type: "agent.activity", Body: events.AgentActivity{Kind: "writing", Target: "e2e/.qa/context.json", Status: "completed"}},

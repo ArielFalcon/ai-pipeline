@@ -14,7 +14,7 @@ import (
 	"github.com/zalando/go-keyring"
 )
 
-const service = "panchito"
+const service = "qayaba"
 
 // SaveToken stores a non-empty token for host. Errors are swallowed (the token is a
 // convenience, not a requirement).
@@ -55,7 +55,7 @@ func lastHostPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, "panchito", "last-host"), nil
+	return filepath.Join(dir, "qayaba", "last-host"), nil
 }
 
 func SaveLastHost(host string) {
@@ -83,11 +83,11 @@ func LoadLastHost() string {
 // DiscoverToken finds the orchestrator's API token WITHOUT the operator typing it, mirroring
 // how the server resolves it (index.ts): the QA_API_TOKEN env var first; else the
 // config/.api_token file the server auto-generates on first boot, located by walking UP from
-// the working directory to the panchito repo (so the console works when launched from a
+// the working directory to the qayaba repo (so the console works when launched from a
 // subdirectory). Returns the token plus a short source label ("$QA_API_TOKEN" or
 // "config/.api_token"), or ("","") when nothing is found.
 //
-// Trust model: PANCHITO_ROOT is operator-set and trusted as-is. Directories found by
+// Trust model: QAYABA_ROOT is operator-set and trusted as-is. Directories found by
 // walking up are trusted ONLY when they have the repo's shape (both a config/apps AND a
 // config/e2e directory beside the token), so a stray config/.api_token planted in some
 // unrelated parent directory is never read and sent as a credential.
@@ -95,7 +95,7 @@ func DiscoverToken() (token, source string) {
 	if t := strings.TrimSpace(os.Getenv("QA_API_TOKEN")); t != "" {
 		return t, "$QA_API_TOKEN"
 	}
-	if r := strings.TrimSpace(os.Getenv("PANCHITO_ROOT")); r != "" {
+	if r := strings.TrimSpace(os.Getenv("QAYABA_ROOT")); r != "" {
 		if t := readTrimmed(filepath.Join(r, "config", ".api_token")); t != "" {
 			return t, "config/.api_token"
 		}
@@ -133,7 +133,7 @@ func ancestors(dir string) []string {
 	}
 }
 
-// isRepoRoot reports whether dir has the panchito repo's shape (both config/apps and
+// isRepoRoot reports whether dir has the qayaba repo's shape (both config/apps and
 // config/e2e) — a strong-enough signal that a lone planted config/.api_token elsewhere is not
 // mistaken for the real one.
 func isRepoRoot(dir string) bool {

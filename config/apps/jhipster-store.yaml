@@ -9,12 +9,12 @@
 #   - jhipster-registry (Eureka) : service discovery
 # Fully local, no API keys.
 #
-# How to run DEV (bring it up yourself; panchito never builds/starts it):
+# How to run DEV (bring it up yourself; qayaba never builds/starts it):
 #   cd ../jhipster-store/docker-compose && docker compose up -d
 #   → the gateway UI is at http://localhost:8080  (login admin/admin)
 #   (needs ~3-4GB Docker RAM — stop the petclinic stack first if it's up.)
 #
-# How to run panchito over it (manual mode; the CLI runs INSIDE the orchestrator so the working
+# How to run qayaba over it (manual mode; the CLI runs INSIDE the orchestrator so the working
 # copy lands in the shared `mirrors` volume the agents read). GIT_REMOTE_BASE points the clone at
 # the bind-mounted local repo, per-run only:
 #   SHA=$(git -C ../jhipster-store rev-parse HEAD)

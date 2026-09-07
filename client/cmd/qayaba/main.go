@@ -1,4 +1,4 @@
-// Command panchito is the installable terminal client for the Panchito control
+// Command qayaba is the installable terminal client for the Qayaba control
 // plane (the Go/Bubble Tea channel). It connects to a running orchestrator and,
 // eventually, launches and watches QA runs live.
 package main
@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ArielFalcon/panchito/internal/api"
-	"github.com/ArielFalcon/panchito/internal/contract"
-	"github.com/ArielFalcon/panchito/internal/store"
-	"github.com/ArielFalcon/panchito/internal/ui"
+	"github.com/ArielFalcon/qayaba/internal/api"
+	"github.com/ArielFalcon/qayaba/internal/contract"
+	"github.com/ArielFalcon/qayaba/internal/store"
+	"github.com/ArielFalcon/qayaba/internal/ui"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -26,7 +26,7 @@ func main() {
 	runtimeFlags, args := parseRuntimeFlags(os.Args[1:])
 	if runtimeFlags.provider != "" || runtimeFlags.dual || firstArg(args) == "agent" {
 		if err := runCommand(runtimeFlags, args); err != nil {
-			fmt.Fprintln(os.Stderr, "panchito:", err)
+			fmt.Fprintln(os.Stderr, "qayaba:", err)
 			os.Exit(1)
 		}
 		return
@@ -34,7 +34,7 @@ func main() {
 
 	p := tea.NewProgram(ui.New(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
-		fmt.Fprintln(os.Stderr, "panchito:", err)
+		fmt.Fprintln(os.Stderr, "qayaba:", err)
 		os.Exit(1)
 	}
 }
@@ -102,7 +102,7 @@ func runAgentCommand(ctx context.Context, client *api.Client, args []string) err
 		flags, _ := parseRuntimeFlags(args[1:])
 		return applyRuntimeFlags(ctx, client, flags)
 	default:
-		return fmt.Errorf("usage: panchito agent [status|models <provider>|set --opencode|--codex|--dual]")
+		return fmt.Errorf("usage: qayaba agent [status|models <provider>|set --opencode|--codex|--dual]")
 	}
 }
 

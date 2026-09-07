@@ -12,7 +12,7 @@
 // src/qa/execute.ts's killTree + the ad hoc spawn/timeout/abort wiring src/qa/setup.ts's
 // defaultSetupDeps.install used to hand-roll). `seedDir` is injected as a plain resolved STRING — the
 // composition factory (the sole src<->qa-engine seam) inlines src/qa/setup.ts's old seedDir()
-// (`PANCHITO_ROOT` env read), so this ADAPTER'S OWN CODE never reads env directly (env-agnostic-
+// (`QAYABA_ROOT` env read), so this ADAPTER'S OWN CODE never reads env directly (env-agnostic-
 // adapter invariant, same precedent as the mirror-provisioning and github-publication slices).
 //
 // TEMPLATE-STRING EXEMPTION: FAILURE_CAPTURE_BLOCK (below) contains literal `process.env.
@@ -214,7 +214,7 @@ export const nodeFsDeps: SetupAdapterFsDeps = {
 export interface SetupAdapterDeps {
   fs: SetupAdapterFsDeps;
   runner: SandboxedBinaryRunner;
-  // Injected resolved path (PANCHITO_ROOT-aware) — this module never reads env. Built by the
+  // Injected resolved path (QAYABA_ROOT-aware) — this module never reads env. Built by the
   // composition factory from the SAME formula src/qa/setup.ts's old seedDir() used.
   seedDir: string;
 }

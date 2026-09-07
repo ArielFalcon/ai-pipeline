@@ -54,12 +54,12 @@ import { buildServiceBoundaryResolver } from "@contexts/service-topology/infrast
 import { CodebaseMemoryClient } from "../qa-engine/src/shared-infrastructure/code-graph/codebase-memory-client";
 import { RedactionPortAdapter } from "./orchestrator/sanitizer";
 
-const SELF_REPO = process.env.PANCHITO_REPO ?? "ArielFalcon/panchito";
-const ROOT = process.env.PANCHITO_ROOT ?? process.cwd();
+const SELF_REPO = process.env.QAYABA_REPO ?? "ArielFalcon/qayaba";
+const ROOT = process.env.QAYABA_ROOT ?? process.cwd();
 const TOKEN_FILE = join(ROOT, "config", ".api_token");
 // sdd/migration-wiring-phase-2 Slice 1 (D-A): constructed ONCE, injected with the SAME shell
 // loaders config-loader.ts's own callers use (no root override needed — both loaders default to
-// this file's identical process.env.PANCHITO_ROOT ?? process.cwd() computation independently).
+// this file's identical process.env.QAYABA_ROOT ?? process.cwd() computation independently).
 const appCatalog = new YamlAppConfigAdapter({ load: loadAppConfig, list: listAppConfigs });
 // sdd/migration-wiring-phase-2 Slice 7b-2: the canonical redaction adapter (env+pattern) for this
 // file's error-message responses, replacing src/util/redact.ts's redactError.
@@ -260,12 +260,12 @@ const ARTIFACT_SIZE_TTL_MS = 60_000;
 
 function generatePrometheusMetrics(queue: JobQueue, openSessions: number): string {
   const lines: string[] = [];
-  lines.push(`# HELP panchito_queue_depth Current depth of the job queue`);
-  lines.push(`# TYPE panchito_queue_depth gauge`);
-  lines.push(`panchito_queue_depth ${queue.size}`);
-  lines.push(`# HELP panchito_open_sessions Number of open OpenCode sessions`);
-  lines.push(`# TYPE panchito_open_sessions gauge`);
-  lines.push(`panchito_open_sessions ${openSessions}`);
+  lines.push(`# HELP qayaba_queue_depth Current depth of the job queue`);
+  lines.push(`# TYPE qayaba_queue_depth gauge`);
+  lines.push(`qayaba_queue_depth ${queue.size}`);
+  lines.push(`# HELP qayaba_open_sessions Number of open OpenCode sessions`);
+  lines.push(`# TYPE qayaba_open_sessions gauge`);
+  lines.push(`qayaba_open_sessions ${openSessions}`);
   // Completed runs by verdict (OBS-05) — the metric an operator alerts on (fail/invalid/
   // infra-error rate shift). Sourced from the durable runs table, never a wrong-when-restarted
   // in-memory counter. Always emit the known verdict labels so a 0 is explicit (no missing series).
@@ -275,10 +275,10 @@ function generatePrometheusMetrics(queue: JobQueue, openSessions: number): strin
   } catch (err) {
     console.warn(`[qa] metrics: verdict counts unavailable: ${err instanceof Error ? err.message : String(err)}`);
   }
-  lines.push(`# HELP panchito_runs_total Completed runs by verdict`);
-  lines.push(`# TYPE panchito_runs_total counter`);
+  lines.push(`# HELP qayaba_runs_total Completed runs by verdict`);
+  lines.push(`# TYPE qayaba_runs_total counter`);
   for (const verdict of ["pass", "fail", "flaky", "invalid", "infra-error", "skipped"]) {
-    lines.push(`panchito_runs_total{verdict="${verdict}"} ${counts[verdict] ?? 0}`);
+    lines.push(`qayaba_runs_total{verdict="${verdict}"} ${counts[verdict] ?? 0}`);
   }
   // Artifact size gauge: best-effort, TTL-cached. A scan error yields 0 for that app;
   // the gauge block is omitted entirely when no apps are configured.
@@ -756,7 +756,7 @@ const server = createServer(async (req, res) => {
 finalizeInterruptedRuns();
 
 server.listen(port, () => {
-  logJson("info", `panchito listening on :${port}${apiToken ? " (API auth on)" : ""}`);
+  logJson("info", `qayaba listening on :${port}${apiToken ? " (API auth on)" : ""}`);
   // Make global fetch proxy-aware (HTTP(S)_PROXY/NO_PROXY) from boot, before any GitHub API or
   // health call. No-op when no proxy is configured. (A per-run build refines the timeouts.)
   const startupTimeout = Number(process.env.OPENCODE_TIMEOUT_MS) || 900_000;

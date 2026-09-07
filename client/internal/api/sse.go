@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ArielFalcon/panchito/internal/events"
+	"github.com/ArielFalcon/qayaba/internal/events"
 )
 
 // StreamRunEvents opens the SSE stream for a run and calls onEvent for each decoded

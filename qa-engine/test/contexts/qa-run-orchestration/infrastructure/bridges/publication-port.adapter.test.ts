@@ -842,7 +842,7 @@ test("Slice 4: publish() threads tested/isCode/parentRunId into the PR body rend
   });
 
   assert.match(result.outcome, /pr/);
-  assert.match(bodySeen, /Source-code tests generated\/updated by panchito/, "isCode:true must select the code-flavored PR wording");
+  assert.match(bodySeen, /Source-code tests generated\/updated by qayaba/, "isCode:true must select the code-flavored PR wording");
   assert.match(bodySeen, /\*\*Covers:\*\*/);
   assert.match(bodySeen, /\*\*parseConfig\*\*/);
   assert.match(bodySeen, /Continuation of run-deadbeef/);
@@ -884,7 +884,7 @@ test("Slice 4: publish() with no tested/isCode/parentRunId supplied still render
   const result = await adapter.publish({ verdict: "pass", cases: [], logs: "", mirrorDir: "/mirrors/org/app", sha: "abc1234" });
 
   assert.match(result.outcome, /pr/);
-  assert.match(bodySeen, /E2E tests generated\/updated by panchito/, "absent isCode falls back to the e2e-flavored wording");
+  assert.match(bodySeen, /E2E tests generated\/updated by qayaba/, "absent isCode falls back to the e2e-flavored wording");
   assert.ok(!bodySeen.includes("Covers:"), "no tested metadata was supplied, so the section must be absent");
   assert.ok(!bodySeen.includes("Continuation of"), "no parentRunId was supplied, so no continuation reference should render");
 });

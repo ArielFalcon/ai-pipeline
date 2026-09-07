@@ -1,4 +1,4 @@
-# qayaba
+# QAyaba
 <div align="center">
 
 [![Node.js 22+](https://img.shields.io/badge/node-22%2B-brightgreen)](https://nodejs.org)

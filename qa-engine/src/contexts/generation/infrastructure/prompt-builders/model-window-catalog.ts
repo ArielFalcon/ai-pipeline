@@ -86,18 +86,18 @@ const MODEL_WINDOW_TOKENS: Record<string, number> = {
   // Generator / maintainer model: kimi-k2.7-code.
   // Likely supports 128K+ but we use 64K conservatively until telemetry confirms.
   "kimi-k2.7-code": 64_000,
-  // Generator model (current qa-generator in agents/opencode.json): deepseek-v4-pro.
+  // Generator model (current qa-generator in agents/opencode.json): qwen3.7-plus.
   // 64K conservative starting point (matches kimi) until the real window is confirmed — raise after
   // telemetry. Without this entry the model falls to the 32K DEFAULT, halving the qa-generator prompt
   // budget (which is what shed the volatile sections and broke the two seam-d pinning tests).
-  "deepseek-v4-pro": 64_000,
+  "qwen3.7-plus": 64_000,
   // Reviewer model: minimax-m3.
   // Reviewer prompts are typically smaller (spec contents + DOM slice), so 32K
   // is used as a conservative starting value. Raise after Phase-0 data.
   "minimax-m3": 32_000,
-  // Worker / flash tier models: deepseek-v4-flash.
+  // Worker / flash tier models: qwen3.8-flash.
   // Workers receive per-objective prompts (smaller scope), 32K is safe.
-  "deepseek-v4-flash": 32_000,
+  "qwen3.8-flash": 32_000,
   // Codex models (T-P2-4): gpt-5.4, gpt-5.4-mini and gpt-5.5 (reviewer).
   // GPT-5 series supports 128K+ context (conservative entry; raise after telemetry confirms).
   // Without entries these fall to the 32K default, silently truncating context on large runs.
